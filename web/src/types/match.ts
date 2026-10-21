@@ -12,6 +12,14 @@ export type MatchEvent = {
   event_type: EventType;
   completed?: boolean;
   pressure?: number;
+  /**
+   * Not emitted by the current backend. Reserved for a future feed: pitch
+   * coordinates on a 0–100 scale (x along the pitch towards the opponent's
+   * goal, y across it) and the pass receiver. UI shows these only when present.
+   */
+  x?: number;
+  y?: number;
+  receiver?: string;
 };
 
 export type Insight = {

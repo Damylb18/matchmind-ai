@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { AWAY, HOME } from "../../data/teams";
 import { percent } from "../../lib/format";
 import { emptyCounts, type CountStats } from "../../lib/matchState";
@@ -6,7 +7,24 @@ import { TeamCrest } from "../TeamCrest";
 
 type Row = { label: string; home: number | null; away: number | null; format?: (v: number) => string };
 
-export function TeamComparison({ teams }: { teams: Record<string, CountStats> }) {
+type TeamComparisonProps = {
+  teams: Record<string, CountStats>;
+  title?: string;
+  info?: string;
+  className?: string;
+  children?: ReactNode;
+};
+
+const DEFAULT_INFO =
+  "Counted from events received since this browser connected. Bars compare the two values in each row.";
+
+export function TeamComparison({
+  teams,
+  title = "Team Comparison",
+  info = DEFAULT_INFO,
+  className = "comparison-panel",
+  children,
+}: TeamComparisonProps) {
   const h = teams[HOME.apiName] ?? emptyCounts();
   const a = teams[AWAY.apiName] ?? emptyCounts();
   const avg = (stats: CountStats) => (stats.pressures ? stats.pressureSum / stats.pressures : null);
@@ -33,10 +51,10 @@ export function TeamComparison({ teams }: { teams: Record<string, CountStats> })
 
   return (
     <Panel
-      title="Team Comparison"
+      title={title}
       provenance="session"
-      info="Counted from events received since this browser connected. Bars compare the two values in each row."
-      className="comparison-panel"
+      info={info}
+      className={className}
     >
       <div className="comparison-teams">
         <span>
@@ -77,6 +95,7 @@ export function TeamComparison({ teams }: { teams: Record<string, CountStats> })
           })}
         </tbody>
       </table>
+      {children}
     </Panel>
   );
 }

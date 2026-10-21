@@ -1,0 +1,28 @@
+.pitch {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.pitch-grass {
+  fill: #0e2419;
+}
+
+.pitch-stripe {
+  fill: rgba(255, 255, 255, 0.022);
+}
+
+.pitch-markings {
+  fill: none;
+  stroke: rgba(226, 236, 230, 0.38);
+  stroke-width: 0.35;
+}
+
+.pitch-spot {
+  fill: rgba(226, 236, 230, 0.5);
+  stroke: none;
+}
+
+.pitch-goal {
+  fill: rgba(226, 236, 230, 0.08);
+}

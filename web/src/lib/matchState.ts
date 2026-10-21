@@ -3,6 +3,8 @@ import { MOMENTUM_BIN_SECONDS, momentumWeight, type MomentumBins } from "./momen
 
 /** Latest events kept for feeds. Session aggregates below cover every event received. */
 export const EVENT_BUFFER_SIZE = 200;
+/** Chronological session history for period filtering (~2 hours at one event per second). */
+export const HISTORY_SIZE = 7200;
 const PRESSURE_HISTORY_SIZE = 180;
 const INSIGHT_HISTORY_SIZE = 50;
 
@@ -35,6 +37,8 @@ export type PressurePoint = { id: string; clock: number; team: string; value: nu
 export type MatchState = {
   /** Newest first, capped at EVENT_BUFFER_SIZE. */
   events: MatchEvent[];
+  /** Oldest first, capped at HISTORY_SIZE. Used by Analyst Mode period filters. */
+  history: MatchEvent[];
   insights: InsightEntry[];
   /** Authoritative backend totals (match-wide, both teams). */
   metrics: MatchMetrics | null;
@@ -55,6 +59,7 @@ export type MatchState = {
 
 export const initialMatchState: MatchState = {
   events: [],
+  history: [],
   insights: [],
   metrics: null,
   teams: {},
@@ -90,7 +95,7 @@ export const playerKey = (team: string, player: string) => `${team}::${player}`;
 
 const sequenceOf = (eventId: string) => Number(eventId.replace(/\D/g, ""));
 
-function addEvent<T extends CountStats>(stats: T, event: MatchEvent): T {
+export function addEvent<T extends CountStats>(stats: T, event: MatchEvent): T {
   const next = { ...stats, events: stats.events + 1 };
   switch (event.event_type) {
     case "pass":
@@ -142,6 +147,10 @@ export function matchReducer(state: MatchState, action: MatchAction): MatchState
 
   return {
     events: [event, ...base.events].slice(0, EVENT_BUFFER_SIZE),
+    history:
+      base.history.length >= HISTORY_SIZE
+        ? [...base.history.slice(1 - HISTORY_SIZE), event]
+        : [...base.history, event],
     insights: [...newInsights.reverse(), ...base.insights].slice(0, INSIGHT_HISTORY_SIZE),
     metrics,
     teams: {
