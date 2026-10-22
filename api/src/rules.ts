@@ -17,11 +17,11 @@ export function detectInsights(event: MatchEvent): Insight[] {
   }
 
   const teamEvents = [
-    ...(recentPressure.get(event.team) ?? []),
+    ...(recentPressure.get(event.team_id) ?? []),
     event,
   ].slice(-WINDOW_SIZE);
 
-  recentPressure.set(event.team, teamEvents);
+  recentPressure.set(event.team_id, teamEvents);
 
   if (teamEvents.length < WINDOW_SIZE) {
     return [];
@@ -34,29 +34,33 @@ export function detectInsights(event: MatchEvent): Insight[] {
   const surgeIsActive = average > PRESSURE_THRESHOLD;
 
   if (!surgeIsActive) {
-    activeSurges.delete(event.team);
+    activeSurges.delete(event.team_id);
     return [];
   }
 
-  if (activeSurges.has(event.team)) {
+  if (activeSurges.has(event.team_id)) {
     return [];
   }
 
-  activeSurges.add(event.team);
+  activeSurges.add(event.team_id);
   insightCounter++;
 
-  return [
-    {
-      id: `insight_${insightCounter}`,
-      type: "pressure_surge",
-      headline: `${event.team}: pressure is building`,
-      explanation:
-        `${event.team} has recorded high pressure intensity across ` +
-        `${WINDOW_SIZE} recent pressure events. This indicates ` +
-        `pressure intensity, not necessarily territorial control ` +
-        `or scoring threat.`,
-      minute: event.minute,
-      evidence_event_ids: teamEvents.map((item) => item.event_id),
-    },
-  ];
+ 
+return [
+  {
+    id: `insight_${insightCounter}`,
+    type: "pressure_surge",
+    headline: `${event.team_id}: pressure is building`,
+    explanation:
+      `${event.team_id} has recorded high pressure intensity across ` +
+      `${WINDOW_SIZE} recent pressure events. This indicates ` +
+      `pressure intensity, not necessarily territorial control ` +
+      `or scoring threat.`,
+    minute: event.minute,
+    team_id: event.team_id,
+    confidence: 0.9,
+    evidence_event_ids: teamEvents.map((item) => item.event_id),
+  },
+];
+
 }

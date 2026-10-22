@@ -1,15 +1,90 @@
-
 export type EventType = "pass" | "shot" | "tackle" | "pressure";
+
+export type EventOutcome =
+
+  | "successful"
+
+  | "unsuccessful"
+
+  | "on_target"
+
+  | "off_target"
+
+  | "saved"
+
+  | "goal"
+
+  | "blocked"
+
+  | "unknown";
+
+  export type Player = {
+
+  id: string;
+
+  name: string;
+
+  team_id: string;
+
+  position: string;
+
+  shirt_number: number;
+
+};
+
+export type Team = {
+
+  id: string;
+
+  name: string;
+
+  short_name: string;
+
+};
+
+export type MatchState = {
+
+  match_id: string;
+
+  home_team_id: string;
+
+  away_team_id: string;
+
+  home_score: number;
+
+  away_score: number;
+
+  clock_seconds: number;
+
+  status: "live" | "half_time" | "full_time";
+
+};
 
 export type MatchEvent = {
   event_id: string;
   match_id: string;
   minute: number;
   second: number;
-  team: string;
-  player: string;
+  team_id: string;
+  player_id: string;
   event_type: EventType;
+
+  // Normalised pitch coordinates: x and y range from 0 to 100.
+
+  x?: number;
+
+  y?: number;
+
+  end_x?: number;
+
+  end_y?: number;
+
+  recipient_player_id?: string;
+
+  outcome?: EventOutcome;
+
   completed?: boolean;
+
   pressure?: number;
 };
 
@@ -20,6 +95,8 @@ export type Insight = {
   explanation: string;
   minute: number;
   evidence_event_ids: string[];
+  team_id: string;
+  confidence: number;
 };
 
 export type MatchMetrics = {
@@ -30,6 +107,7 @@ export type MatchMetrics = {
 
 export type ProcessedEvent = {
   event: MatchEvent;
+  match: MatchState;
   metrics: MatchMetrics;
   insights: Insight[];
 };
