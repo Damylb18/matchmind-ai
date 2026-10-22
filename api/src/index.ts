@@ -3,7 +3,8 @@ import express from "express";
 import cors from "cors";
 import { calculateMetrics } from "./metrics.js";
 import { detectInsights } from "./rules.js";
-import type { EventType, MatchEvent} from "./types.js";
+import { teams, players, match } from "./data.js";
+import type { EventType, MatchEvent } from "./types.js";
 
 const app = express();
 
@@ -15,66 +16,122 @@ const clients = new Set<import("express").Response>();
 
 let eventCounter = 0;
 
-const teams = ["Manchester United", "Arsenal"];
-const players = ["Player_7", "Player_8", "Player_10"];
-
+function randomNumber(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 function createEvent(): MatchEvent {
   eventCounter++;
 
-  // Repeat an 80-second demo cycle.
+  // Repeat the 80-second pressure demonstration.
   const phase = (eventCounter - 1) % 80;
 
   let eventType: EventType;
-  let team: string;
+  let teamId: string;
   let pressure: number | undefined;
 
-  // Manchester United high-pressure sequence.
-  if (phase >= 0 && phase < 10) {
+  if (phase < 10) {
     eventType = "pressure";
-    team = "Manchester United";
+    teamId = "man_utd";
     pressure = 0.85 + Math.random() * 0.14;
-  }
-  // Manchester United low-pressure sequence, which resets the alert.
-  else if (phase >= 20 && phase < 30) {
+  } else if (phase >= 20 && phase < 30) {
     eventType = "pressure";
-    team = "Manchester United";
+    teamId = "man_utd";
     pressure = 0.15 + Math.random() * 0.25;
-  }
-  // Arsenal high-pressure sequence.
-  else if (phase >= 40 && phase < 50) {
+  } else if (phase >= 40 && phase < 50) {
     eventType = "pressure";
-    team = "Arsenal";
+    teamId = "arsenal";
     pressure = 0.85 + Math.random() * 0.14;
-  }
-  // Arsenal low-pressure sequence, which resets the alert.
-  else if (phase >= 60 && phase < 70) {
+  } else if (phase >= 60 && phase < 70) {
     eventType = "pressure";
-    team = "Arsenal";
+    teamId = "arsenal";
     pressure = 0.15 + Math.random() * 0.25;
-  }
-  // Normal events fill the gaps between pressure sequences.
-  else {
-    eventType = (
-      ["pass", "pass", "pass", "shot", "tackle"] as EventType[]
-    )[Math.floor(Math.random() * 5)]!;
+  } else {
+    const normalTypes: EventType[] = [
+      "pass",
+      "pass",
+      "pass",
+      "shot",
+      "tackle",
+    ];
 
-    team = teams[Math.floor(Math.random() * teams.length)]!;
+    eventType = normalTypes[randomNumber(0, normalTypes.length - 1)]!;
+    teamId = teams[randomNumber(0, teams.length - 1)]!.id;
   }
+
+  // Choose a player belonging to the event's team.
+  const teamPlayers = players.filter(
+    (player) => player.team_id === teamId
+  );
+
+  const player = teamPlayers[randomNumber(0, teamPlayers.length - 1)]!;
+
+  // Normalised coordinates: 0–100 across the pitch.
+  const x = randomNumber(5, 95);
+  const y = randomNumber(5, 95);
 
   const event: MatchEvent = {
     event_id: `evt_${eventCounter}`,
-    match_id: "match_001",
+    match_id: match.match_id,
     minute: Math.floor((eventCounter - 1) / 60),
     second: (eventCounter - 1) % 60,
-    team,
-    player: players[Math.floor(Math.random() * players.length)]!,
+    team_id: teamId,
+    player_id: player.id,
     event_type: eventType,
+    x,
+    y,
   };
 
   if (eventType === "pass") {
-    event.completed = Math.random() > 0.2;
+    const possibleRecipients = teamPlayers.filter(
+      (candidate) => candidate.id !== player.id
+    );
+
+    const recipient =
+      possibleRecipients.length > 0
+        ? possibleRecipients[
+            randomNumber(0, possibleRecipients.length - 1)
+          ]!
+        : undefined;
+
+    const completed = Math.random() > 0.2;
+
+    event.completed = completed;
+    event.outcome = completed ? "successful" : "unsuccessful";
+    event.end_x = Math.min(100, Math.max(0, x + randomNumber(-20, 25)));
+    event.end_y = Math.min(100, Math.max(0, y + randomNumber(-20, 20)));
     event.pressure = Math.random();
+
+    if (completed && recipient) {
+      event.recipient_player_id = recipient.id;
+    }
+  }
+
+  if (eventType === "shot") {
+    const roll = Math.random();
+
+    if (roll < 0.08) {
+      event.outcome = "goal";
+    } else if (roll < 0.30) {
+      event.outcome = "on_target";
+    } else if (roll < 0.50) {
+      event.outcome = "saved";
+    } else if (roll < 0.70) {
+      event.outcome = "blocked";
+    } else {
+      event.outcome = "off_target";
+    }
+
+    event.end_x = 100;
+    event.end_y = randomNumber(35, 65);
+  }
+
+  if (eventType === "tackle") {
+    event.outcome = Math.random() > 0.5
+      ? "successful"
+      : "unsuccessful";
+    event.end_x = x;
+    event.end_y = y;
   }
 
   if (eventType === "pressure") {
@@ -84,16 +141,27 @@ function createEvent(): MatchEvent {
   return event;
 }
 
-
-
 function processEvent(event: MatchEvent) {
   events.push(event);
+
+  // The demo clock advances one second per generated event.
+  match.clock_seconds = eventCounter - 1;
+
+  // Update the score only for a goal event.
+  if (event.event_type === "shot" && event.outcome === "goal") {
+    if (event.team_id === match.home_team_id) {
+      match.home_score++;
+    } else if (event.team_id === match.away_team_id) {
+      match.away_score++;
+    }
+  }
 
   const metrics = calculateMetrics(events);
   const insights = detectInsights(event);
 
   return {
     event,
+    match: { ...match },
     metrics,
     insights,
   };
@@ -101,6 +169,22 @@ function processEvent(event: MatchEvent) {
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", service: "MatchMind API" });
+});
+
+app.get("/api/match", (_req, res) => {
+  res.json(match);
+});
+
+app.get("/api/teams", (_req, res) => {
+  res.json(teams);
+});
+
+app.get("/api/players", (_req, res) => {
+  res.json(players);
+});
+
+app.get("/api/match/events", (_req, res) => {
+  res.json(events.slice(-100));
 });
 
 app.get("/api/match/stream", (req, res) => {
@@ -111,14 +195,19 @@ app.get("/api/match/stream", (req, res) => {
 
   clients.add(res);
 
-  res.write(`data: ${JSON.stringify({ type: "connected" })}\n\n`);
+  res.write(
+    `data: ${JSON.stringify({
+      type: "connected",
+      match,
+    })}\n\n`
+  );
 
   req.on("close", () => {
     clients.delete(res);
   });
 });
 
-// Generate an event every second for the prototype.
+// Generate synthetic match events for the prototype.
 setInterval(() => {
   const result = processEvent(createEvent());
   const payload = `data: ${JSON.stringify(result)}\n\n`;
