@@ -49,7 +49,7 @@ export type TeamInfo = {
 export const TEAMS: Record<TeamId, TeamInfo> = {
   mun: {
     id: "mun",
-    apiName: "Manchester United",
+    apiName: "man_utd",
     name: "Manchester United",
     shortName: "Man Utd",
     code: "MUN",
@@ -59,7 +59,7 @@ export const TEAMS: Record<TeamId, TeamInfo> = {
   },
   ars: {
     id: "ars",
-    apiName: "Arsenal",
+    apiName: "arsenal",
     name: "Arsenal",
     shortName: "Arsenal",
     code: "ARS",

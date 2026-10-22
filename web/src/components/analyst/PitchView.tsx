@@ -90,7 +90,7 @@ export function PitchView({ events }: { events: MatchEvent[] }) {
     <Panel
       title="Pitch View"
       provenance={simulated ? "illustrative" : "session"}
-      info="Plots events at their pitch coordinates. The current feed sends no x/y locations, so live markers cannot be drawn; they will appear automatically once the backend adds x and y (0–100) to each event."
+      info="Plots live events using the coordinates supplied by the backend (0–100). If an event has no coordinates, it is omitted from the live pitch. Simulated preview is illustrative only."
       className="pitch-panel"
       actions={
         <button

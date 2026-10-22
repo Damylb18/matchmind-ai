@@ -42,6 +42,7 @@ export type MatchState = {
   insights: InsightEntry[];
   /** Authoritative backend totals (match-wide, both teams). */
   metrics: MatchMetrics | null;
+  match: StreamMessage["match"] | null;
   /** Session aggregates: every event received since this browser connected. */
   teams: Record<string, CountStats>;
   players: Record<string, PlayerStats>;
@@ -62,6 +63,7 @@ export const initialMatchState: MatchState = {
   history: [],
   insights: [],
   metrics: null,
+  match: null,
   teams: {},
   players: {},
   momentum: {},
@@ -120,7 +122,7 @@ export function addEvent<T extends CountStats>(stats: T, event: MatchEvent): T {
 }
 
 export function matchReducer(state: MatchState, action: MatchAction): MatchState {
-  const { event, metrics, insights } = action.message;
+  const { event, metrics, insights, match } = action.message;
   const seq = sequenceOf(event.event_id);
   let base = state;
   let missed = 0;
@@ -153,6 +155,7 @@ export function matchReducer(state: MatchState, action: MatchAction): MatchState
         : [...base.history, event],
     insights: [...newInsights.reverse(), ...base.insights].slice(0, INSIGHT_HISTORY_SIZE),
     metrics,
+    match: match ?? base.match,
     teams: {
       ...base.teams,
       [event.team]: addEvent(base.teams[event.team] ?? emptyCounts(), event),

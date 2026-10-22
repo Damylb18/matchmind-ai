@@ -1,7 +1,7 @@
 import { AWAY, HOME, TEAMS, teamByApiName } from "../../data/teams";
 import { formatClockSeconds } from "../../lib/format";
 import type { CountStats, InsightEntry, PressurePoint } from "../../lib/matchState";
-import type { MatchMetrics } from "../../types/match";
+import type { BackendMatchState, MatchMetrics } from "../../types/match";
 import { TeamCrest } from "../TeamCrest";
 import { BroadcastScoreboard } from "./BroadcastScoreboard";
 import { TACTICAL_LABELS, type TransitionType } from "./graphics";
@@ -15,6 +15,7 @@ import { InsightTicker, PassAccuracyChip, PressureMeter, StatsScene, StatsStrip 
 
 export type StageData = {
   clockLabel: string;
+  match: BackendMatchState | null;
   live: boolean;
   insights: InsightEntry[];
   /** Insight banner currently due on screen (main scene). */
@@ -88,6 +89,7 @@ export function SceneRenderer({ current, previous, transition, overlays, quality
         visible={overlays.scoreboard.visible && scene !== "transition"}
         clock={data.clockLabel}
         live={data.live}
+        match={data.match}
       />
       <InsightBanner
         insight={bannerInsight ?? data.focus}

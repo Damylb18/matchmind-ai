@@ -1,17 +1,18 @@
 import type { ReactNode } from "react";
 import { AWAY, HOME, type TeamInfo } from "../data/teams";
 import { formatClock, STATUS_TEXT } from "../lib/format";
-import type { ConnectionStatus } from "../types/match";
+import type { BackendMatchState, ConnectionStatus } from "../types/match";
 import { TeamCrest } from "./TeamCrest";
 
 type MatchHeaderProps = {
   minute: number | null;
   second: number | null;
   status: ConnectionStatus;
+  match?: BackendMatchState | null;
   children?: ReactNode;
 };
 
-export function MatchHeader({ minute, second, status, children }: MatchHeaderProps) {
+export function MatchHeader({ minute, second, status, match, children }: MatchHeaderProps) {
   const isLive = status === "live" && minute !== null;
 
   return (
@@ -45,22 +46,18 @@ export function MatchHeader({ minute, second, status, children }: MatchHeaderPro
         <TeamSide team={HOME} />
 
         <div className="scoreboard">
-          <div
-            className="score"
-            aria-label="Score unavailable: the event feed does not include goals"
-            title="The event feed does not include goals or a scoreline yet"
-          >
-            <span>–</span>
+          <div className="score" aria-label={match ? `Score ${match.home_score} to ${match.away_score}` : "Score unavailable"}>
+            <span>{match?.home_score ?? "–"}</span>
             <span className="score-sep">:</span>
-            <span>–</span>
+            <span>{match?.away_score ?? "–"}</span>
           </div>
           <div className="clock-row">
             <time className="match-clock" aria-label="Match clock">
-              {minute !== null && second !== null ? formatClock(minute, second) : "--:--"}
+              {match ? formatClock(Math.floor(match.clock_seconds / 60), match.clock_seconds % 60) : minute !== null && second !== null ? formatClock(minute, second) : "--:--"}
             </time>
             {isLive && <span className="live-tag">Live</span>}
           </div>
-          <span className="score-note">Score not in data feed</span>
+          {!match && <span className="score-note">Score not in data feed</span>}
         </div>
 
         <TeamSide team={AWAY} away />

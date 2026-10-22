@@ -19,6 +19,8 @@ export type MatchEvent = {
    */
   x?: number;
   y?: number;
+  end_x?: number;
+  end_y?: number;
   receiver?: string;
 };
 
@@ -38,7 +40,18 @@ export type MatchMetrics = {
   pass_accuracy: number;
 };
 
+export type BackendMatchState = {
+  match_id: string;
+  home_team_id: string;
+  away_team_id: string;
+  home_score: number;
+  away_score: number;
+  clock_seconds: number;
+  status: "live" | "half_time" | "full_time";
+};
+
 export type StreamMessage = {
+  match?: BackendMatchState;
   event: MatchEvent;
   metrics: MatchMetrics;
   insights: Insight[];

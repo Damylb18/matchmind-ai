@@ -26,7 +26,7 @@ export default function App() {
       <main className="main-content">
         {/* Broadcast Mode has its own production top bar. */}
         {mode !== "broadcast" && (
-          <MatchHeader minute={state.minute} second={state.second} status={status}>
+          <MatchHeader minute={state.minute} second={state.second} status={status} match={state.match}>
             {mode === "fan" && <FanTabs tab={fanTab} onChange={setFanTab} />}
             {mode === "analyst" && (
               <AnalystNav

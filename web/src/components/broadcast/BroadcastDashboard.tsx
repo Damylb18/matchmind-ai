@@ -100,12 +100,19 @@ export function BroadcastDashboard({ state, status, production: prod }: Broadcas
     setVideo(null);
   };
 
-  const clockLabel =
-    state.minute !== null && state.second !== null ? formatClock(state.minute, state.second) : "--:--";
+  const clockLabel = state.match
+    ? formatClock(
+        Math.floor(state.match.clock_seconds / 60),
+        state.match.clock_seconds % 60,
+      )
+    : state.minute !== null && state.second !== null
+      ? formatClock(state.minute, state.second)
+      : "--:--";
   const banner = bannerInsight(production, state.insights, state.clock);
 
   const data: StageData = {
     clockLabel,
+    match: state.match,
     live: status === "live",
     insights: state.insights,
     banner,

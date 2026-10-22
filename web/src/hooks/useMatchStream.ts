@@ -1,5 +1,7 @@
+
 import { useEffect, useReducer, useState } from "react";
 import { initialMatchState, isStreamMessage, matchReducer } from "../lib/matchState";
+import { adaptStreamMessage } from "../lib/streamAdapter";
 import type { ConnectionStatus } from "../types/match";
 
 export const STREAM_URL: string =
@@ -17,13 +19,16 @@ export function useMatchStream() {
     source.onmessage = (message) => {
       try {
         const data: unknown = JSON.parse(message.data);
-        if (isStreamMessage(data)) dispatch({ type: "message", message: data });
+        const adapted = adaptStreamMessage(data);
+
+        if (adapted && isStreamMessage(adapted)) {
+          dispatch({ type: "message", message: adapted });
+        }
       } catch (error) {
         console.error("Invalid match event", error);
       }
     };
 
-    // EventSource retries on its own; CLOSED means it has given up.
     source.onerror = () =>
       setStatus(source.readyState === EventSource.CLOSED ? "offline" : "reconnecting");
 

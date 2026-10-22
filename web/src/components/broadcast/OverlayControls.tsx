@@ -163,7 +163,7 @@ function ScoreboardTab({ o, set, clockLabel }: { o: Overlays; set: SetFn; clockL
           />
         </Field>
       </div>
-      <p className="bc-note">The feed has no goals, so the scoreboard shows “v” instead of a score.</p>
+      <p className="bc-note">The scoreboard displays the simulated live match score when available.</p>
     </>
   );
 }

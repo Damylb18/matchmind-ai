@@ -70,21 +70,56 @@ export function PassingNetworkTab({ events }: { events: MatchEvent[] }) {
 
 function buildNetwork(usable: MatchEvent[]) {
   if (!usable.length) return null;
+
   const sums = new Map<string, { x: number; y: number; n: number }>();
   const edges = new Map<string, number>();
+
+  const addPosition = (player: string, x: number, y: number) => {
+    const sum = sums.get(player) ?? { x: 0, y: 0, n: 0 };
+    sums.set(player, {
+      x: sum.x + x,
+      y: sum.y + y,
+      n: sum.n + 1,
+    });
+  };
+
   for (const event of usable) {
-    const sum = sums.get(event.player) ?? { x: 0, y: 0, n: 0 };
-    sums.set(event.player, { x: sum.x + event.x!, y: sum.y + event.y!, n: sum.n + 1 });
-    const pair = [event.player, event.receiver!].sort().join("|");
+    if (
+      typeof event.x !== "number" ||
+      typeof event.y !== "number" ||
+      !event.receiver
+    ) continue;
+
+    addPosition(event.player, event.x, event.y);
+
+    if (
+      typeof event.end_x === "number" &&
+      typeof event.end_y === "number"
+    ) {
+      addPosition(event.receiver, event.end_x, event.end_y);
+    }
+
+    const pair = [event.player, event.receiver].sort().join("|");
     edges.set(pair, (edges.get(pair) ?? 0) + 1);
   }
+
   const nodes = new Map(
     [...sums].map(([id, sum]) => [
       id,
-      { x: (sum.x / sum.n / 100) * PITCH_LENGTH, y: (sum.y / sum.n / 100) * PITCH_WIDTH },
+      {
+        x: (sum.x / sum.n / 100) * PITCH_LENGTH,
+        y: (sum.y / sum.n / 100) * PITCH_WIDTH,
+      },
     ]),
   );
-  return { nodes, edges: [...edges].map(([pair, count]) => ({ ids: pair.split("|"), count })) };
+
+  return {
+    nodes,
+    edges: [...edges].map(([pair, count]) => ({
+      ids: pair.split("|"),
+      count,
+    })),
+  };
 }
 
 function LiveNetwork({ passes, team, outcome }: { passes: MatchEvent[]; team: TeamInfo; outcome: PassOutcome }) {
