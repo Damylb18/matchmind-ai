@@ -16,7 +16,10 @@ import { InsightTicker, PassAccuracyChip, PressureMeter, StatsScene, StatsStrip 
 export type StageData = {
   clockLabel: string;
   match: BackendMatchState | null;
+  /** Feed connected and updating. */
   live: boolean;
+  /** Feed interrupted while showing last known data. */
+  stale: boolean;
   insights: InsightEntry[];
   /** Insight banner currently due on screen (main scene). */
   banner: InsightEntry | null;
@@ -89,6 +92,7 @@ export function SceneRenderer({ current, previous, transition, overlays, quality
         visible={overlays.scoreboard.visible && scene !== "transition"}
         clock={data.clockLabel}
         live={data.live}
+        stale={data.stale}
         match={data.match}
       />
       <InsightBanner

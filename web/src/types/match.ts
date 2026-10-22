@@ -12,6 +12,8 @@ export type MatchEvent = {
   event_type: EventType;
   completed?: boolean;
   pressure?: number;
+  /** e.g. "successful", "goal", "saved" — sent by the current backend. */
+  outcome?: string;
   /**
    * Not emitted by the current backend. Reserved for a future feed: pitch
    * coordinates on a 0–100 scale (x along the pitch towards the opponent's
@@ -31,6 +33,9 @@ export type Insight = {
   explanation: string;
   minute: number;
   evidence_event_ids: string[];
+  /** Sent by the current backend; optional so older payloads still parse. */
+  team_id?: string;
+  confidence?: number;
 };
 
 /** Match-wide totals calculated by the backend over every event since it started. */
@@ -57,6 +62,7 @@ export type StreamMessage = {
   insights: Insight[];
 };
 
-export type ConnectionStatus = "connecting" | "live" | "reconnecting" | "offline";
+/** "stalled": the connection is open but no data has arrived for several seconds. */
+export type ConnectionStatus = "connecting" | "live" | "stalled" | "reconnecting" | "offline";
 
 export type Mode = "fan" | "analyst" | "broadcast";

@@ -37,6 +37,8 @@ type OverlayControlsProps = {
   pressure: PressurePoint[];
   clock: number | null;
   clockLabel: string;
+  /** Current backend score, e.g. "2–1"; null before any match state. */
+  scoreLabel: string | null;
   bannerVisible: boolean;
   videoUrl: string | null;
   videoName: string | null;
@@ -73,7 +75,9 @@ export function OverlayControls(props: OverlayControlsProps) {
       </div>
 
       <div className="bc-tab-panel" role="tabpanel" id={`bc-panel-${tab}`} aria-labelledby={`bc-tab-${tab}`}>
-        {tab === "scoreboard" && <ScoreboardTab o={o} set={set} clockLabel={props.clockLabel} />}
+        {tab === "scoreboard" && (
+          <ScoreboardTab o={o} set={set} clockLabel={props.clockLabel} scoreLabel={props.scoreLabel} />
+        )}
         {tab === "insights" && <InsightsTab {...props} o={o} set={set} />}
         {tab === "player" && <PlayerTab o={o} set={set} />}
         {tab === "tactical" && <TacticalTab o={o} set={set} pressure={props.pressure} videoActive={!!props.videoUrl} />}
@@ -85,7 +89,18 @@ export function OverlayControls(props: OverlayControlsProps) {
 
 type SetFn = <K extends keyof Overlays>(section: K, patch: Partial<Overlays[K]>) => void;
 
-function ScoreboardTab({ o, set, clockLabel }: { o: Overlays; set: SetFn; clockLabel: string }) {
+function ScoreboardTab({
+  o,
+  set,
+  clockLabel,
+  scoreLabel,
+}: {
+  o: Overlays;
+  set: SetFn;
+  clockLabel: string;
+  scoreLabel: string | null;
+}) {
+  const middle = scoreLabel ?? "v";
   const s = o.scoreboard;
   const styles: { id: ScoreboardStyle; label: string }[] = [
     { id: "standard", label: "Standard" },
@@ -116,11 +131,11 @@ function ScoreboardTab({ o, set, clockLabel }: { o: Overlays; set: SetFn; clockL
               <span className={`bc-style-mini style-${style.id}`} aria-hidden="true">
                 {style.id === "wide" ? (
                   <>
-                    <i>Man Utd</i> v <i>Arsenal</i>
+                    <i>Man Utd</i> <b>{middle}</b> <i>Arsenal</i>
                   </>
                 ) : (
                   <>
-                    {HOME.code} <b>v</b> {AWAY.code}
+                    {HOME.code} <b>{middle}</b> {AWAY.code}
                   </>
                 )}
                 {style.id !== "minimal" && <small>{clockLabel}</small>}
@@ -163,7 +178,10 @@ function ScoreboardTab({ o, set, clockLabel }: { o: Overlays; set: SetFn; clockL
           />
         </Field>
       </div>
-      <p className="bc-note">The scoreboard displays the simulated live match score when available.</p>
+      <p className="bc-note">
+        Score, clock and HT/FT status come from the backend’s simulated match. Before the first match state
+        arrives the scoreboard shows “v”.
+      </p>
     </>
   );
 }

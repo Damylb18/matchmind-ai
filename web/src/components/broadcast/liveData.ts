@@ -1,5 +1,7 @@
 import { PLAYER_PROFILES, type PlayerProfile } from "../../data/players";
-import type { InsightEntry, PressurePoint } from "../../lib/matchState";
+import { formatClockSeconds } from "../../lib/format";
+import type { InsightEntry, MatchState, PressurePoint } from "../../lib/matchState";
+import type { ConnectionStatus } from "../../types/match";
 import type { ProductionState } from "./productionState";
 
 /** Mirrors WINDOW_SIZE in api/src/rules.ts. */
@@ -44,3 +46,51 @@ export function focusInsight(production: ProductionState, insights: InsightEntry
 
 export const profileById = (id: string): PlayerProfile =>
   PLAYER_PROFILES.find((profile) => profile.id === id) ?? PLAYER_PROFILES[0]!;
+
+export type FeedNotice = { tone: "info" | "warn" | "ok"; text: string };
+
+/** How long (match seconds) a "feed restored" notice stays up. */
+const RECOVERY_NOTICE_SECONDS = 10;
+
+/**
+ * Operator-facing feed status: interruptions, recovery and empty states, so stale
+ * data is never mistaken for live data.
+ */
+export function feedNotice(
+  status: ConnectionStatus,
+  state: MatchState,
+  clockLabel: string,
+): FeedNotice | null {
+  const hasData = state.match !== null || state.clock !== null;
+  const score = state.match ? `, ${state.match.home_score}–${state.match.away_score}` : "";
+
+  if (status === "connecting") {
+    return hasData ? null : { tone: "info", text: "Connecting to the match feed — no match data yet." };
+  }
+
+  if (status !== "live") {
+    if (!hasData) {
+      return { tone: "warn", text: "Match feed unavailable — retrying automatically. No match data to show yet." };
+    }
+    return {
+      tone: "warn",
+      text: `Feed ${status === "stalled" ? "stalled" : "interrupted"} — retrying automatically. Showing the last known state (${clockLabel}${score}); nothing is updating.`,
+    };
+  }
+
+  const recovery = state.recovery;
+  const now = state.match?.clock_seconds ?? state.clock;
+  if (recovery && now !== null && now - recovery.atClock < RECOVERY_NOTICE_SECONDS) {
+    return recovery.kind === "restart"
+      ? {
+          tone: "info",
+          text: `Backend restarted — a new match session began at ${formatClockSeconds(recovery.atClock)}. Session statistics were reset.`,
+        }
+      : {
+          tone: "ok",
+          text: `Feed restored at ${formatClockSeconds(recovery.atClock)} — ${recovery.gapSeconds}s of match time passed while disconnected. Score and clock are current.`,
+        };
+  }
+
+  return hasData ? null : { tone: "info", text: "Connected — waiting for the first match event." };
+}

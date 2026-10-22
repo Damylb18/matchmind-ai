@@ -1,5 +1,5 @@
 import { PLAYER_PROFILES } from "../../data/players";
-import type { GraphicId, LowerThirdStyle, TacticalGraphic, TransitionType } from "./graphics";
+import { GRAPHICS, type GraphicId, type LowerThirdStyle, type TacticalGraphic, type TransitionType } from "./graphics";
 import { SCENE_BY_ID, SCENES, type SceneId } from "./scenes";
 
 export type ScoreboardStyle = "standard" | "minimal" | "wide";
@@ -185,7 +185,8 @@ export function productionReducer(state: ProductionState, action: ProductionActi
     case "take":
       return take(state, action.scene, action.itemId ?? null, action.clock);
     case "takePreview":
-      return take(state, state.preview, null, action.clock);
+      // Like a vision mixer: the outgoing Program scene drops into Preview, so Take toggles back.
+      return { ...take(state, state.preview, null, action.clock), preview: state.program.scene };
     case "takeNext": {
       if (state.playlist.length === 0) return state;
       const index = state.playlist.findIndex((item) => item.id === state.liveItemId);
@@ -264,8 +265,18 @@ export function productionReducer(state: ProductionState, action: ProductionActi
       };
     case "hideBanner":
       return { ...state, banner: null, dismissedKey: action.latestKey };
-    case "graphic":
-      return applyGraphic(state, action.id, action.latestInsightKey, action.clock);
+    case "graphic": {
+      const next = applyGraphic(state, action.id, action.latestInsightKey, action.clock);
+      if (next === state) return state;
+      const def = GRAPHICS.find((graphic) => graphic.id === action.id);
+      const text =
+        action.id === "insight-banner"
+          ? "Showing latest insight banner"
+          : def?.category === "transitions"
+            ? `Transition set to ${def.label}`
+            : `${def?.label ?? action.id} ${isGraphicActive(next, action.id, false) ? "on" : "off"}`;
+      return log(next, action.clock, text);
+    }
   }
 }
 

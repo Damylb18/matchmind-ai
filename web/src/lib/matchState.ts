@@ -1,4 +1,4 @@
-import type { Insight, MatchEvent, MatchMetrics, StreamMessage } from "../types/match";
+import type { BackendMatchState, Insight, MatchEvent, MatchMetrics, StreamMessage } from "../types/match";
 import { MOMENTUM_BIN_SECONDS, momentumWeight, type MomentumBins } from "./momentum";
 
 /** Latest events kept for feeds. Session aggregates below cover every event received. */
@@ -7,6 +7,12 @@ export const EVENT_BUFFER_SIZE = 200;
 export const HISTORY_SIZE = 7200;
 const PRESSURE_HISTORY_SIZE = 180;
 const INSIGHT_HISTORY_SIZE = 50;
+
+/**
+ * An event this many sequence numbers behind the latest one means the backend
+ * restarted; anything closer is treated as a duplicate or stale delivery and ignored.
+ */
+const RESTART_SEQUENCE_GAP = 30;
 
 /** Mirrors PRESSURE_THRESHOLD in api/src/rules.ts. */
 export const HIGH_PRESSURE_THRESHOLD = 0.75;
@@ -56,6 +62,18 @@ export type MatchState = {
   received: number;
   /** Events skipped in the sequence, e.g. during a reconnect. */
   missed: number;
+  /** Connection snapshots received (one per SSE connection or reconnection). */
+  connections: number;
+  /** Set when the feed comes back after a reconnect or a backend restart. */
+  recovery: Recovery | null;
+};
+
+export type Recovery = {
+  kind: "reconnect" | "restart";
+  /** Match clock (seconds) when the feed came back. */
+  atClock: number;
+  /** Match seconds that elapsed while disconnected (reconnects only). */
+  gapSeconds: number;
 };
 
 export const initialMatchState: MatchState = {
@@ -75,9 +93,14 @@ export const initialMatchState: MatchState = {
   lastSeq: null,
   received: 0,
   missed: 0,
+  connections: 0,
+  recovery: null,
 };
 
-export type MatchAction = { type: "message"; message: StreamMessage };
+export type MatchAction =
+  | { type: "message"; message: StreamMessage }
+  /** The match state sent when a connection opens. */
+  | { type: "snapshot"; match: BackendMatchState };
 
 export const emptyCounts = (): CountStats => ({
   events: 0,
@@ -121,18 +144,46 @@ export function addEvent<T extends CountStats>(stats: T, event: MatchEvent): T {
   return next;
 }
 
+function applySnapshot(state: MatchState, match: BackendMatchState): MatchState {
+  const connections = state.connections + 1;
+  // The clock went backwards: the backend restarted with a new match, so start a fresh session.
+  if (state.clock !== null && match.clock_seconds + 2 < state.clock) {
+    return {
+      ...initialMatchState,
+      match,
+      connections,
+      recovery: { kind: "restart", atClock: match.clock_seconds, gapSeconds: 0 },
+    };
+  }
+  // A later connection after we already had data is a recovery from an interruption.
+  const recovery: Recovery | null =
+    state.connections > 0 && state.clock !== null
+      ? { kind: "reconnect", atClock: match.clock_seconds, gapSeconds: Math.max(0, match.clock_seconds - state.clock) }
+      : state.recovery;
+  return { ...state, match, connections, recovery };
+}
+
 export function matchReducer(state: MatchState, action: MatchAction): MatchState {
+  if (action.type === "snapshot") return applySnapshot(state, action.match);
+
   const { event, metrics, insights, match } = action.message;
   const seq = sequenceOf(event.event_id);
   let base = state;
   let missed = 0;
 
   if (state.lastSeq !== null && Number.isFinite(seq)) {
-    // Duplicate delivery: ignore.
-    if (seq === state.lastSeq) return state;
-    // Sequence went backwards: the backend restarted, so start a fresh session.
-    if (seq < state.lastSeq) base = initialMatchState;
-    else missed = seq - state.lastSeq - 1;
+    if (seq <= state.lastSeq) {
+      // Duplicate or stale delivery: ignore it rather than disturb the session.
+      if (state.lastSeq - seq < RESTART_SEQUENCE_GAP) return state;
+      // A large backwards jump means the backend restarted without a snapshot reaching us.
+      base = {
+        ...initialMatchState,
+        connections: state.connections,
+        recovery: { kind: "restart", atClock: clockOf(event), gapSeconds: 0 },
+      };
+    } else {
+      missed = seq - state.lastSeq - 1;
+    }
   }
 
   const clock = clockOf(event);
@@ -185,6 +236,8 @@ export function matchReducer(state: MatchState, action: MatchAction): MatchState
     lastSeq: Number.isFinite(seq) ? seq : base.lastSeq,
     received: base.received + 1,
     missed: base.missed + missed,
+    connections: base.connections,
+    recovery: base.recovery,
   };
 }
 

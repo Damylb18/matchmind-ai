@@ -28,6 +28,7 @@ export const EVENT_LABELS: Record<EventType, string> = {
 export const STATUS_TEXT: Record<ConnectionStatus, string> = {
   connecting: "Connecting",
   live: "Live",
+  stalled: "No data",
   reconnecting: "Reconnecting",
   offline: "Offline",
 };

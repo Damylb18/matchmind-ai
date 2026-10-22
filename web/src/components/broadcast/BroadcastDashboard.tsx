@@ -7,7 +7,8 @@ import { BroadcastPlaylist } from "./BroadcastPlaylist";
 import { BroadcastPreview } from "./BroadcastPreview";
 import { BroadcastTopBar } from "./BroadcastTopBar";
 import { GraphicsLibrary } from "./GraphicsLibrary";
-import { bannerInsight, focusInsight } from "./liveData";
+import { bannerInsight, feedNotice, focusInsight } from "./liveData";
+import { MatchFeedPanel } from "./MatchFeedPanel";
 import { OverlayControls } from "./OverlayControls";
 import { ProductionToolbar } from "./ProductionToolbar";
 import type { StageData } from "./SceneRenderer";
@@ -109,11 +110,15 @@ export function BroadcastDashboard({ state, status, production: prod }: Broadcas
       ? formatClock(state.minute, state.second)
       : "--:--";
   const banner = bannerInsight(production, state.insights, state.clock);
+  const hasData = state.match !== null || state.clock !== null;
+  // Last known data on screen while the feed is not updating.
+  const stale = hasData && status !== "live";
 
   const data: StageData = {
     clockLabel,
     match: state.match,
     live: status === "live",
+    stale,
     insights: state.insights,
     banner,
     focus: focusInsight(production, state.insights),
@@ -125,7 +130,13 @@ export function BroadcastDashboard({ state, status, production: prod }: Broadcas
 
   return (
     <div className="bc-dashboard">
-      <BroadcastTopBar clockLabel={clockLabel} status={status} output={production.output} />
+      <BroadcastTopBar
+        clockLabel={clockLabel}
+        status={status}
+        output={production.output}
+        notice={feedNotice(status, state, clockLabel)}
+        stale={stale}
+      />
 
       <div className="bc-main">
         <BroadcastPreview
@@ -139,19 +150,23 @@ export function BroadcastDashboard({ state, status, production: prod }: Broadcas
           expanded={expanded}
           onToggleFullscreen={toggleFullscreen}
         />
-        <OverlayControls
-          production={production}
-          dispatch={dispatch}
-          insights={state.insights}
-          pressure={state.pressure}
-          clock={state.clock}
-          clockLabel={clockLabel}
-          bannerVisible={banner !== null}
-          videoUrl={video?.url ?? null}
-          videoName={video?.name ?? null}
-          onVideoFile={onVideoFile}
-          onClearVideo={clearVideo}
-        />
+        <div className="bc-side">
+          <OverlayControls
+            production={production}
+            dispatch={dispatch}
+            insights={state.insights}
+            pressure={state.pressure}
+            clock={state.clock}
+            clockLabel={clockLabel}
+            scoreLabel={state.match ? `${state.match.home_score}–${state.match.away_score}` : null}
+            bannerVisible={banner !== null}
+            videoUrl={video?.url ?? null}
+            videoName={video?.name ?? null}
+            onVideoFile={onVideoFile}
+            onClearVideo={clearVideo}
+          />
+          <MatchFeedPanel state={state} status={status} />
+        </div>
       </div>
 
       <div className="bc-bottom">
