@@ -23,39 +23,42 @@ function randomNumber(min: number, max: number): number {
 function createEvent(): MatchEvent {
   eventCounter++;
 
-  // Repeat the 80-second pressure demonstration.
+  // Repeat a pressure demonstration every 80 events.
   const phase = (eventCounter - 1) % 80;
 
   let eventType: EventType;
   let teamId: string;
   let pressure: number | undefined;
 
-  if (phase < 10) {
+  // Shorter, less frequent pressure spells.
+  if (phase < 3) {
     eventType = "pressure";
     teamId = "man_utd";
-    pressure = 0.85 + Math.random() * 0.14;
-  } else if (phase >= 20 && phase < 30) {
+    pressure = 0.65 + Math.random() * 0.20;
+  } else if (phase >= 3 && phase < 6) {
     eventType = "pressure";
     teamId = "man_utd";
-    pressure = 0.15 + Math.random() * 0.25;
-  } else if (phase >= 40 && phase < 50) {
+    pressure = 0.10 + Math.random() * 0.20;
+  } else if (phase >= 40 && phase < 43) {
     eventType = "pressure";
     teamId = "arsenal";
-    pressure = 0.85 + Math.random() * 0.14;
-  } else if (phase >= 60 && phase < 70) {
+    pressure = 0.65 + Math.random() * 0.20;
+  } else if (phase >= 43 && phase < 46) {
     eventType = "pressure";
     teamId = "arsenal";
-    pressure = 0.15 + Math.random() * 0.25;
+    pressure = 0.10 + Math.random() * 0.20;
   } else {
-    const normalTypes: EventType[] = [
-      "pass",
-      "pass",
-      "pass",
-      "shot",
-      "tackle",
-    ];
+    // Most events are passes; shots are deliberately rare.
+    const roll = Math.random();
 
-    eventType = normalTypes[randomNumber(0, normalTypes.length - 1)]!;
+    if (roll < 0.005) {
+      eventType = "shot";       // 0.5%
+    } else if (roll < 0.16) {
+      eventType = "tackle";     // 15.5%
+    } else {
+      eventType = "pass";       // 84%
+    }
+
     teamId = teams[randomNumber(0, teams.length - 1)]!.id;
   }
 
@@ -110,11 +113,11 @@ function createEvent(): MatchEvent {
   if (eventType === "shot") {
     const roll = Math.random();
 
-    if (roll < 0.08) {
+    if (roll < 0.05) {
       event.outcome = "goal";
-    } else if (roll < 0.30) {
+    } else if (roll < 0.25) {
       event.outcome = "on_target";
-    } else if (roll < 0.50) {
+    } else if (roll < 0.45) {
       event.outcome = "saved";
     } else if (roll < 0.70) {
       event.outcome = "blocked";
