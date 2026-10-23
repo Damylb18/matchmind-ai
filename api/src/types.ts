@@ -26,7 +26,7 @@ export type EventOutcome =
 
   team_id: string;
 
-  position: string;
+  position: "GK" | "DEF" | "MID" | "FWD";
 
   shirt_number: number;
 
@@ -42,6 +42,8 @@ export type Team = {
 
 };
 
+export type MatchStatus = "live" | "half_time" | "full_time";
+
 export type MatchState = {
 
   match_id: string;
@@ -56,7 +58,7 @@ export type MatchState = {
 
   clock_seconds: number;
 
-  status: "live" | "half_time" | "full_time";
+  status: MatchStatus;
 
 };
 
@@ -103,6 +105,7 @@ export type MatchMetrics = {
   attempted_passes: number;
   completed_passes: number;
   pass_accuracy: number;
+  incomplete_passes: number;
 };
 
 export type ProcessedEvent = {

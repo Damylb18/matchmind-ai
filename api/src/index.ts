@@ -4,7 +4,7 @@ import cors from "cors";
 import { calculateMetrics } from "./metrics.js";
 import { detectInsights } from "./rules.js";
 import { teams, players, match } from "./data.js";
-import type { EventType, MatchEvent } from "./types.js";
+import type { EventType, MatchEvent, Player } from "./types.js";
 
 const app = express();
 
@@ -14,10 +14,50 @@ app.use(express.json());
 const events: MatchEvent[] = [];
 const clients = new Set<import("express").Response>();
 
+const TEST_MODE = process.env.TEST_MODE === "true";
+
+const SECONDS_PER_EVENT = TEST_MODE ? 60 : 1;
+const EVENT_INTERVAL_MS = TEST_MODE ? 500 : 1000;
+const HALFTIME_BREAK_MS = TEST_MODE ? 1000 : 15_000;
+
 let eventCounter = 0;
+let halftimeStarted = false;
 
 function randomNumber(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function getPositionCoordinates(
+  teamId: string,
+  position: Player["position"]
+): { x: number; y: number } {
+  // X runs from left goal to right goal.
+  // Man United attack right; Arsenal attack left.
+  const attacksRight = teamId === match.home_team_id;
+
+  const xZones: Record<Player["position"], [number, number]> = {
+    GK: [4, 9],
+    DEF: [16, 38],
+    MID: [32, 66],
+    FWD: [56, 89],
+  };
+
+  const yZones: Record<Player["position"], [number, number]> = {
+    GK: [42, 58],
+    DEF: [12, 88],
+    MID: [10, 90],
+    FWD: [18, 82],
+  };
+
+  const [minX, maxX] = xZones[position]!;
+  const [minY, maxY] = yZones[position]!;
+
+  const attackingX = randomNumber(minX, maxX);
+
+  return {
+    x: attacksRight ? attackingX : 100 - attackingX,
+    y: randomNumber(minY, maxY),
+  };
 }
 
 function createEvent(): MatchEvent {
@@ -54,7 +94,7 @@ function createEvent(): MatchEvent {
     if (roll < 0.005) {
       eventType = "shot";       // 0.5%
     } else if (roll < 0.16) {
-      eventType = "tackle";     // 15.5%
+      eventType = "tackle";     // 16%
     } else {
       eventType = "pass";       // 84%
     }
@@ -70,14 +110,15 @@ function createEvent(): MatchEvent {
   const player = teamPlayers[randomNumber(0, teamPlayers.length - 1)]!;
 
   // Normalised coordinates: 0–100 across the pitch.
-  const x = randomNumber(5, 95);
-  const y = randomNumber(5, 95);
+  const { x, y } = getPositionCoordinates(teamId, player.position);
+
+  const simulatedSeconds = Math.min(eventCounter * SECONDS_PER_EVENT, 5400);
 
   const event: MatchEvent = {
     event_id: `evt_${eventCounter}`,
     match_id: match.match_id,
-    minute: Math.floor((eventCounter - 1) / 60),
-    second: (eventCounter - 1) % 60,
+    minute: Math.floor(simulatedSeconds / 60),
+    second: simulatedSeconds % 60,
     team_id: teamId,
     player_id: player.id,
     event_type: eventType,
@@ -99,15 +140,33 @@ function createEvent(): MatchEvent {
 
     const completed = Math.random() > 0.2;
 
+    const targetPlayer =
+  completed && recipient
+    ? recipient
+    : teamPlayers[randomNumber(0, teamPlayers.length - 1)]!;
+
+const target = getPositionCoordinates(teamId, targetPlayer.position);
+
+if (completed && recipient) {
+  event.recipient_player_id = recipient.id;
+  event.end_x = target.x;
+  event.end_y = target.y;
+} else {
+  // Incomplete passes tend to finish away from the intended target.
+  event.end_x = Math.max(
+    0,
+    Math.min(100, target.x + randomNumber(-12, 12))
+  );
+  event.end_y = Math.max(
+    0,
+    Math.min(100, target.y + randomNumber(-12, 12))
+  );
+}
+
     event.completed = completed;
     event.outcome = completed ? "successful" : "unsuccessful";
-    event.end_x = Math.min(100, Math.max(0, x + randomNumber(-20, 25)));
-    event.end_y = Math.min(100, Math.max(0, y + randomNumber(-20, 20)));
     event.pressure = Math.random();
 
-    if (completed && recipient) {
-      event.recipient_player_id = recipient.id;
-    }
   }
 
   if (eventType === "shot") {
@@ -125,7 +184,7 @@ function createEvent(): MatchEvent {
       event.outcome = "off_target";
     }
 
-    event.end_x = 100;
+    event.end_x = teamId === match.home_team_id ? 100 : 0;
     event.end_y = randomNumber(35, 65);
   }
 
@@ -147,8 +206,21 @@ function createEvent(): MatchEvent {
 function processEvent(event: MatchEvent) {
   events.push(event);
 
-  // The demo clock advances one second per generated event.
-  match.clock_seconds = eventCounter - 1;
+  // Advance the simulated match clock.
+  const simulatedSeconds = Math.min(
+    eventCounter * SECONDS_PER_EVENT,
+    5400
+  );
+
+  match.clock_seconds = simulatedSeconds;
+
+  if (simulatedSeconds >= 5400) {
+    match.status = "full_time";
+  } else if (simulatedSeconds >= 2700 && !halftimeStarted) {
+    match.status = "half_time";
+  } else {
+    match.status = "live";
+  }
 
   // Update the score only for a goal event.
   if (event.event_type === "shot" && event.outcome === "goal") {
@@ -169,6 +241,7 @@ function processEvent(event: MatchEvent) {
     insights,
   };
 }
+
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", service: "MatchMind API" });
@@ -211,14 +284,49 @@ app.get("/api/match/stream", (req, res) => {
 });
 
 // Generate synthetic match events for the prototype.
-setInterval(() => {
-  const result = processEvent(createEvent());
-  const payload = `data: ${JSON.stringify(result)}\n\n`;
+function broadcast(data: unknown) {
+  const payload = `data: ${JSON.stringify(data)}\n\n`;
 
   for (const client of clients) {
     client.write(payload);
   }
-}, 1000);
+}
+
+let halftimeTimer: ReturnType<typeof setTimeout> | undefined;
+
+setInterval(() => {
+  // Stop generating events during breaks or after full-time.
+  if (match.status === "half_time" || match.status === "full_time") {
+    return;
+  }
+
+  const result = processEvent(createEvent());
+
+  // Preserve the existing event payload.
+  broadcast(result);
+
+  // Start the halftime break once.
+  if (result.match.status === "half_time" && !halftimeStarted) {
+    halftimeStarted = true;
+
+    setTimeout(() => {
+      if (match.status !== "half_time") return;
+
+      match.status = "live";
+
+      broadcast({
+        type: "match_status",
+        match: { ...match },
+      });
+
+      console.log("Second half started");
+    }, HALFTIME_BREAK_MS);
+  }
+
+  if (result.match.status === "full_time") {
+    console.log("Match finished");
+  }
+}, EVENT_INTERVAL_MS);
 
 app.listen(4000, () => {
   console.log("MatchMind API running at http://localhost:4000");
