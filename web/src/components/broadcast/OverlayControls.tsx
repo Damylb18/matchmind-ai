@@ -3,7 +3,9 @@ import { PLAYER_PROFILES } from "../../data/players";
 import { AWAY, HOME, TEAMS, teamByApiName } from "../../data/teams";
 import { formatClockSeconds } from "../../lib/format";
 import type { InsightEntry, PressurePoint } from "../../lib/matchState";
+import { usePersonaliser } from "../../hooks/usePersonaliser";
 import { Icon } from "../icons/Icon";
+import { InsightSource } from "../InsightSource";
 import { Field, Segmented, Switch } from "./controls";
 import { TACTICAL_LABELS, type TacticalGraphic } from "./graphics";
 import { rollingPressure } from "./liveData";
@@ -195,8 +197,10 @@ function InsightsTab({
   bannerVisible,
 }: OverlayControlsProps & { o: Overlays; set: SetFn }) {
   const s = o.insight;
+  const personalise = usePersonaliser("broadcast");
   const latest = insights[0];
   const target = (s.selectedKey && insights.find((item) => item.key === s.selectedKey)) || latest;
+  const targetText = target ? personalise(target) : null;
 
   return (
     <>
@@ -213,7 +217,7 @@ function InsightsTab({
           <option value="latest">Latest insight{latest ? ` (${formatClockSeconds(latest.clock)})` : ""}</option>
           {insights.map((insight) => (
             <option key={insight.key} value={insight.key}>
-              {formatClockSeconds(insight.clock)} · {insight.headline}
+              {formatClockSeconds(insight.clock)} · {personalise(insight).headline}
             </option>
           ))}
         </select>
@@ -266,12 +270,16 @@ function InsightsTab({
           {insights.length} backend insight{insights.length === 1 ? "" : "s"} this session
         </span>
       </div>
-      {target && (
+      {target && targetText && (
         <div className="bc-insight-preview" style={{ borderColor: teamByApiName(target.team)?.colors.data }}>
-          <strong>{target.headline}</strong>
+          <strong lang={targetText.contentLang}>{targetText.headline}</strong>
           <span>
-            {formatClockSeconds(target.clock)} · {target.evidence_event_ids.length} evidence events · shown verbatim
+            {formatClockSeconds(target.clock)} · {target.evidence_event_ids.length} evidence events ·{" "}
+            <InsightSource personalised={targetText} />
           </span>
+          {targetText.source === "local-demo-template" && (
+            <span lang="en">Backend original: “{target.headline}”</span>
+          )}
         </div>
       )}
     </>

@@ -3294,3 +3294,13 @@ label.bc-btn {
     display: none;
   }
 }
+
+.bc-insight-takeaway {
+  color: var(--bc-accent);
+  font-size: 1.15em;
+  font-weight: 600;
+}
+
+.bc-insight-preview .insight-source {
+  vertical-align: middle;
+}

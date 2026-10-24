@@ -1800,3 +1800,69 @@ select:disabled {
     display: none;
   }
 }
+
+/* ───────────── Insight personalisation ───────────── */
+.sidebar-language {
+  display: grid;
+  gap: 6px;
+  padding: 0 10px;
+}
+
+.sidebar-language .sidebar-label {
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-language select {
+  width: 100%;
+}
+
+.insight-source {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.insight-source.source-backend-fallback {
+  border-style: dashed;
+}
+
+.insight-takeaway {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.insight-note {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.insight-original {
+  padding-left: 8px;
+  border-left: 2px solid var(--border-strong);
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+@media (max-width: 900px) {
+  .sidebar-language {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-basis: 100%;
+    padding: 0;
+  }
+
+  .sidebar-language select {
+    width: auto;
+  }
+}

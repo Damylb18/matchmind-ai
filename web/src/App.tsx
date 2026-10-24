@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import "./App.css";
 import { AnalystDashboard } from "./components/analyst/AnalystDashboard";
 import { AnalystNav, type AnalystTab } from "./components/analyst/AnalystTabs";
@@ -9,6 +9,7 @@ import { MatchHeader } from "./components/MatchHeader";
 import { Sidebar } from "./components/Sidebar";
 import { useMatchStream } from "./hooks/useMatchStream";
 import { DEFAULT_PERIOD, type Period } from "./lib/analysis";
+import { EvidenceContext } from "./lib/evidenceContext";
 import type { Mode } from "./types/match";
 
 export default function App() {
@@ -18,8 +19,14 @@ export default function App() {
   const [analystTab, setAnalystTab] = useState<AnalystTab>("overview");
   const [period, setPeriod] = useState<Period>(DEFAULT_PERIOD);
   const production = useProduction(state.clock);
+  // Lets insight personalisation read each insight's own evidence events.
+  const eventsById = useMemo(
+    () => new Map(state.history.map((event) => [event.event_id, event])),
+    [state.history],
+  );
 
   return (
+    <EvidenceContext.Provider value={eventsById}>
     <div className="app-shell">
       <Sidebar mode={mode} onModeChange={setMode} status={status} received={state.received} />
 
@@ -58,5 +65,6 @@ export default function App() {
         </footer>
       </main>
     </div>
+    </EvidenceContext.Provider>
   );
 }

@@ -36,6 +36,11 @@ export type Insight = {
   /** Sent by the current backend; optional so older payloads still parse. */
   team_id?: string;
   confidence?: number;
+  /**
+   * Optional structured values (e.g. pressureAverage, completedPasses) read by the
+   * personalisation templates in lib/explanation.tsx. Not sent by the current backend.
+   */
+  data?: Record<string, unknown>;
 };
 
 /** Match-wide totals calculated by the backend over every event since it started. */

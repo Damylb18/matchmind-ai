@@ -2,6 +2,7 @@ import { AWAY, HOME } from "../../data/teams";
 import { formatClockSeconds, percent } from "../../lib/format";
 import { emptyCounts, HIGH_PRESSURE_THRESHOLD, type CountStats, type InsightEntry, type PressurePoint } from "../../lib/matchState";
 import type { MatchMetrics } from "../../types/match";
+import { usePersonaliser } from "../../hooks/usePersonaliser";
 import { TeamCrest } from "../TeamCrest";
 import { rollingPressure, ROLLING_WINDOW } from "./liveData";
 
@@ -98,6 +99,7 @@ export function PassAccuracyChip({ metrics, visible }: { metrics: MatchMetrics |
 }
 
 export function InsightTicker({ insights, visible }: { insights: InsightEntry[]; visible: boolean }) {
+  const personalise = usePersonaliser("broadcast");
   const items = insights.slice(0, 5);
   return (
     <div className="bc-overlay bc-ticker" data-visible={visible}>
@@ -109,7 +111,7 @@ export function InsightTicker({ insights, visible }: { insights: InsightEntry[];
           <div className="bc-ticker-run">
             {[...items, ...items].map((insight, index) => (
               <span key={`${insight.key}-${index}`}>
-                {formatClockSeconds(insight.clock)} · {insight.headline}
+                {formatClockSeconds(insight.clock)} · {personalise(insight).headline}
               </span>
             ))}
           </div>

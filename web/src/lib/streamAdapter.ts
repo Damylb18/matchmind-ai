@@ -94,6 +94,7 @@ function parseInsight(value: unknown): Insight | null {
   };
   if (typeof value.team_id === "string") insight.team_id = value.team_id;
   if (typeof value.confidence === "number") insight.confidence = value.confidence;
+  if (isRecord(value.data)) insight.data = value.data;
   return insight;
 }
 
