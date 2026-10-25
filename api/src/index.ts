@@ -63,6 +63,7 @@ function getPositionCoordinates(
 function createEvent(): MatchEvent {
   eventCounter++;
 
+  
   // Repeat a pressure demonstration every 80 events.
   const phase = (eventCounter - 1) % 80;
 
@@ -70,37 +71,41 @@ function createEvent(): MatchEvent {
   let teamId: string;
   let pressure: number | undefined;
 
-  // Shorter, less frequent pressure spells.
-  if (phase < 3) {
+  // Man Utd: five high-pressure events, then three low-pressure events.
+  if (phase < 5) {
     eventType = "pressure";
     teamId = "man_utd";
-    pressure = 0.65 + Math.random() * 0.20;
-  } else if (phase >= 3 && phase < 6) {
+    pressure = 0.78 + Math.random() * 0.14;
+  } else if (phase < 8) {
     eventType = "pressure";
     teamId = "man_utd";
     pressure = 0.10 + Math.random() * 0.20;
-  } else if (phase >= 40 && phase < 43) {
+  }
+
+  // Arsenal: five high-pressure events, then three low-pressure events.
+  else if (phase >= 40 && phase < 45) {
     eventType = "pressure";
     teamId = "arsenal";
-    pressure = 0.65 + Math.random() * 0.20;
-  } else if (phase >= 43 && phase < 46) {
+    pressure = 0.78 + Math.random() * 0.14;
+  } else if (phase >= 45 && phase < 48) {
     eventType = "pressure";
     teamId = "arsenal";
     pressure = 0.10 + Math.random() * 0.20;
   } else {
-    // Most events are passes; shots are deliberately rare.
+    // Keep the existing random event mix for other phases.
     const roll = Math.random();
 
     if (roll < 0.005) {
-      eventType = "shot";       // 0.5%
+      eventType = "shot";
     } else if (roll < 0.16) {
-      eventType = "tackle";     // 16%
+      eventType = "tackle";
     } else {
-      eventType = "pass";       // 84%
+      eventType = "pass";
     }
 
     teamId = teams[randomNumber(0, teams.length - 1)]!.id;
   }
+
 
   // Choose a player belonging to the event's team.
   const teamPlayers = players.filter(
