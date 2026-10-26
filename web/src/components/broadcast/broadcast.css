@@ -103,7 +103,7 @@
   justify-content: center;
   gap: 5px;
   padding: 5px 11px;
-  border: 1px solid rgba(43, 212, 154, 0.45);
+  border: 1px solid rgba(var(--accent-rgb), 0.45);
   border-radius: var(--radius-sm);
   background: var(--accent-soft);
   color: var(--accent);
@@ -113,7 +113,7 @@
 }
 
 .bc-btn:hover:not(:disabled) {
-  background: rgba(43, 212, 154, 0.18);
+  background: rgba(var(--accent-rgb), 0.18);
 }
 
 .bc-btn.ghost {
@@ -391,7 +391,7 @@ label.bc-btn {
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  background: #05080c;
+  background: var(--bg-deep);
   container-type: inline-size;
 }
 
@@ -449,11 +449,12 @@ label.bc-btn {
   --bc-lift: 3.6em;
 }
 
+/* Default on-air theme: MatchMind lime on deep purple. */
 .theme-emerald {
-  --bc-accent: #2bd49a;
-  --bc-accent-ink: #04261b;
-  --bc-panel: rgba(7, 11, 17, 0.9);
-  --bc-panel-2: rgba(20, 28, 39, 0.95);
+  --bc-accent: #00ff85;
+  --bc-accent-ink: #18001f;
+  --bc-panel: rgba(24, 0, 31, 0.92);
+  --bc-panel-2: rgba(55, 0, 60, 0.96);
 }
 
 .theme-steel {
@@ -1701,7 +1702,7 @@ label.bc-btn {
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: #05080c;
+  background: var(--bg-deep);
 }
 
 .bc-sting-bar {
@@ -1815,7 +1816,7 @@ label.bc-btn {
   min-height: 34px;
   padding: 4px;
   border-radius: 4px;
-  background: #0b1018;
+  background: var(--bg-deep);
   color: #fff;
   font-size: 10.5px;
   font-weight: 700;
@@ -1984,7 +1985,7 @@ label.bc-btn {
   left: 3px;
   padding: 1px 3px;
   border-radius: 2px;
-  background: rgba(7, 11, 17, 0.92);
+  background: rgba(var(--bg-rgb), 0.92);
   color: #fff;
   font-size: 6px;
   font-weight: 700;
@@ -1993,7 +1994,7 @@ label.bc-btn {
 
 .bc-thumb-player {
   display: flex;
-  background: #0b1018;
+  background: var(--bg-deep);
 }
 
 .bc-thumb-player .bc-portrait {
@@ -2018,7 +2019,7 @@ label.bc-btn {
   align-content: center;
   gap: 4px;
   padding: 0 8px;
-  background: #0b1018;
+  background: var(--bg-deep);
 }
 
 .bc-thumb-stats span {
@@ -2067,7 +2068,7 @@ label.bc-btn {
 .bc-thumb-figure {
   display: grid;
   place-items: center;
-  background: #05080c;
+  background: var(--bg-deep);
 }
 
 .bc-thumb-brand i {
@@ -2126,7 +2127,7 @@ label.bc-btn {
   align-items: flex-end;
   border-radius: 2px;
   overflow: hidden;
-  background: rgba(7, 11, 17, 0.92);
+  background: rgba(var(--bg-rgb), 0.92);
 }
 
 .bc-mini-lt .bc-portrait {
@@ -2156,7 +2157,7 @@ label.bc-btn {
 .bc-mini-ticker {
   position: absolute;
   border-radius: 2px;
-  background: rgba(7, 11, 17, 0.92);
+  background: rgba(var(--bg-rgb), 0.92);
 }
 
 .bc-mini-strip {
@@ -2185,7 +2186,7 @@ label.bc-btn {
 }
 
 .bc-thumb-transition {
-  background: #05080c;
+  background: var(--bg-deep);
 }
 
 .bc-thumb-transition i,
@@ -2791,7 +2792,7 @@ label.bc-btn {
 }
 
 .bc-notice.tone-ok {
-  border-color: rgba(43, 212, 154, 0.35);
+  border-color: rgba(var(--accent-rgb), 0.35);
   background: var(--accent-soft);
   color: var(--accent);
 }
@@ -2809,6 +2810,9 @@ label.bc-btn {
   padding: 0 0.6em;
   background: var(--bc-panel-2);
   font-variant-numeric: tabular-nums;
+}
+
+.bc-sb-score.is-new {
   animation: bc-goal 1.6s ease-out both;
 }
 
@@ -3303,4 +3307,33 @@ label.bc-btn {
 
 .bc-insight-preview .insight-source {
   vertical-align: middle;
+}
+
+
+/* ═════════════ Visual identity (submission polish) ═════════════ */
+.bc-monitor,
+.bc-toolbar {
+  border-color: var(--border-strong);
+}
+
+.bc-monitor-head {
+  background: linear-gradient(180deg, rgba(var(--brand-rgb), 0.6), transparent);
+}
+
+.bc-toolbar {
+  background: rgba(24, 0, 31, 0.96);
+}
+
+.bc-top-clock {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+/* Scorebug: bolder score figures for on-air legibility. */
+.bc-sb-score b {
+  font-weight: 900;
+}
+
+.bc-sb-team {
+  font-weight: 800;
 }

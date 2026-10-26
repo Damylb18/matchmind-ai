@@ -57,7 +57,11 @@ export function MatchHeader({ minute, second, status, match, children }: MatchHe
             <time className="match-clock" aria-label="Match clock">
               {match ? formatClock(Math.floor(match.clock_seconds / 60), match.clock_seconds % 60) : minute !== null && second !== null ? formatClock(minute, second) : "--:--"}
             </time>
-            {phase ? <span className="phase-tag">{phase}</span> : isLive && <span className="live-tag">Live</span>}
+            {phase ? (
+              <span className={`phase-tag ${match?.status === "full_time" ? "is-ft" : "is-ht"}`}>{phase}</span>
+            ) : (
+              isLive && <span className="live-tag">Live</span>
+            )}
           </div>
           {!match && <span className="score-note">Score not in data feed</span>}
         </div>

@@ -402,7 +402,7 @@ function BrandingTab({
 }: OverlayControlsProps & { o: Overlays; set: SetFn }) {
   const s = o.branding;
   const themes: { id: ThemeId; label: string }[] = [
-    { id: "emerald", label: "Emerald" },
+    { id: "emerald", label: "MatchMind" },
     { id: "steel", label: "Steel" },
     { id: "gold", label: "Gold" },
   ];
