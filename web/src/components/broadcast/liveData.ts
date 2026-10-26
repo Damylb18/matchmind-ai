@@ -78,6 +78,18 @@ export function feedNotice(
     };
   }
 
+  // Play is stopped by the match itself, not by a connection problem. Checked before the
+  // recovery notice, which expires on match time and would never clear while play is stopped.
+  if (state.match?.status === "half_time") {
+    return { tone: "info", text: "Half-time — play resumes shortly. The feed is connected; no events during the break." };
+  }
+  if (state.match?.status === "full_time") {
+    return {
+      tone: "info",
+      text: `Full-time — final score ${state.match.home_score}–${state.match.away_score}. The feed is connected; no further events.`,
+    };
+  }
+
   const recovery = state.recovery;
   const now = state.match?.clock_seconds ?? state.clock;
   if (recovery && now !== null && now - recovery.atClock < RECOVERY_NOTICE_SECONDS) {

@@ -1866,3 +1866,15 @@ select:disabled {
     width: auto;
   }
 }
+
+/* Half-time / full-time tag in the match header (replaces LIVE while play is stopped). */
+.phase-tag {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}

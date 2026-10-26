@@ -100,7 +100,9 @@ export const initialMatchState: MatchState = {
 export type MatchAction =
   | { type: "message"; message: StreamMessage }
   /** The match state sent when a connection opens. */
-  | { type: "snapshot"; match: BackendMatchState };
+  | { type: "snapshot"; match: BackendMatchState }
+  /** A status-only update during half-time or after full-time. */
+  | { type: "status"; match: BackendMatchState };
 
 export const emptyCounts = (): CountStats => ({
   events: 0,
@@ -165,6 +167,8 @@ function applySnapshot(state: MatchState, match: BackendMatchState): MatchState 
 
 export function matchReducer(state: MatchState, action: MatchAction): MatchState {
   if (action.type === "snapshot") return applySnapshot(state, action.match);
+  // Status only: score and clock are unchanged by the backend while play is stopped.
+  if (action.type === "status") return { ...state, match: action.match };
 
   const { event, metrics, insights, match } = action.message;
   const seq = sequenceOf(event.event_id);

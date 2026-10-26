@@ -213,15 +213,59 @@ app.get("/api/match/stream", (req, res) => {
   });
 });
 
-// Generate synthetic match events for the prototype.
-setInterval(() => {
-  const result = processEvent(createEvent());
-  const payload = `data: ${JSON.stringify(result)}\n\n`;
+// Match lifecycle. The demo clock advances one second per event, so the event
+// generated at 45:00 starts half-time and the event at 90:00 ends the match.
+const HALF_TIME_SECONDS = 45 * 60;
+const FULL_TIME_SECONDS = 90 * 60;
+// Optional overrides (e.g. accelerated test runs); defaults are the demo values.
+const EVENT_INTERVAL_MS = Number(process.env.EVENT_INTERVAL_MS) || 1000;
+const HALF_TIME_BREAK_MS = Number(process.env.HALF_TIME_BREAK_MS) || 15_000;
+// While no events are generated, a small status message keeps clients informed
+// (and shows the connection is alive). Event payloads keep their existing shape.
+const STATUS_HEARTBEAT_MS = 2000;
+
+function broadcast(data: unknown) {
+  const payload = `data: ${JSON.stringify(data)}\n\n`;
 
   for (const client of clients) {
     client.write(payload);
   }
-}, 1000);
+}
+
+let halfTimeTaken = false;
+
+// Generate synthetic match events for the prototype.
+setInterval(() => {
+  // No events during half-time or after full-time.
+  if (match.status !== "live") return;
+
+  const result = processEvent(createEvent());
+
+  if (!halfTimeTaken && match.clock_seconds >= HALF_TIME_SECONDS) {
+    halfTimeTaken = true;
+    match.status = "half_time";
+    result.match = { ...match };
+
+    setTimeout(() => {
+      match.status = "live";
+      broadcast({ type: "match_status", match: { ...match } });
+      console.log("Second half started");
+    }, HALF_TIME_BREAK_MS);
+    console.log("Half-time");
+  } else if (match.clock_seconds >= FULL_TIME_SECONDS) {
+    match.status = "full_time";
+    result.match = { ...match };
+    console.log("Full-time");
+  }
+
+  broadcast(result);
+}, EVENT_INTERVAL_MS);
+
+setInterval(() => {
+  if (match.status !== "live") {
+    broadcast({ type: "match_status", match: { ...match } });
+  }
+}, STATUS_HEARTBEAT_MS);
 
 app.listen(4000, () => {
   console.log("MatchMind API running at http://localhost:4000");

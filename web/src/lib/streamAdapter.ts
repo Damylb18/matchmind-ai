@@ -15,6 +15,8 @@ import { TEAMS } from "../data/teams";
 export type StreamPayload =
   /** Sent when a connection opens: the current match state, no event. */
   | { kind: "snapshot"; match: BackendMatchState }
+  /** Sent during half-time / after full-time, when no events are generated. */
+  | { kind: "status"; match: BackendMatchState }
   | { kind: "message"; message: StreamMessage };
 
 const EVENT_TYPES: EventType[] = ["pass", "shot", "tackle", "pressure"];
@@ -105,6 +107,12 @@ export function adaptStreamPayload(value: unknown): StreamPayload | null {
   if (value.type === "connected") {
     const match = parseMatch(value.match);
     return match ? { kind: "snapshot", match } : null;
+  }
+
+  // Match status update (half-time, second half resuming, full-time). No event.
+  if (value.type === "match_status") {
+    const match = parseMatch(value.match);
+    return match ? { kind: "status", match } : null;
   }
 
   const event = value.event;

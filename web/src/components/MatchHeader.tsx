@@ -14,6 +14,8 @@ type MatchHeaderProps = {
 
 export function MatchHeader({ minute, second, status, match, children }: MatchHeaderProps) {
   const isLive = status === "live" && minute !== null;
+  // Half-time / full-time replace the LIVE tag; the connection pill is unaffected.
+  const phase = match?.status === "half_time" ? "Half-time" : match?.status === "full_time" ? "Full-time" : null;
 
   return (
     <header className="match-header">
@@ -55,7 +57,7 @@ export function MatchHeader({ minute, second, status, match, children }: MatchHe
             <time className="match-clock" aria-label="Match clock">
               {match ? formatClock(Math.floor(match.clock_seconds / 60), match.clock_seconds % 60) : minute !== null && second !== null ? formatClock(minute, second) : "--:--"}
             </time>
-            {isLive && <span className="live-tag">Live</span>}
+            {phase ? <span className="phase-tag">{phase}</span> : isLive && <span className="live-tag">Live</span>}
           </div>
           {!match && <span className="score-note">Score not in data feed</span>}
         </div>
