@@ -277,7 +277,7 @@ function InsightsTab({
             {formatClockSeconds(target.clock)} · {target.evidence_event_ids.length} evidence events ·{" "}
             <InsightSource personalised={targetText} />
           </span>
-          {targetText.source === "local-demo-template" && (
+          {targetText.source !== "backend-fallback" && (
             <span lang="en">Backend original: “{target.headline}”</span>
           )}
         </div>

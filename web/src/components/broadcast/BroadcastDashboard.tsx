@@ -8,6 +8,7 @@ import { BroadcastPreview } from "./BroadcastPreview";
 import { BroadcastTopBar } from "./BroadcastTopBar";
 import { GraphicsLibrary } from "./GraphicsLibrary";
 import { bannerInsight, feedNotice, focusInsight } from "./liveData";
+import { MatchRecap } from "../MatchRecap";
 import { MatchFeedPanel } from "./MatchFeedPanel";
 import { OverlayControls } from "./OverlayControls";
 import { ProductionToolbar } from "./ProductionToolbar";
@@ -166,6 +167,7 @@ export function BroadcastDashboard({ state, status, production: prod }: Broadcas
             onClearVideo={clearVideo}
           />
           <MatchFeedPanel state={state} status={status} />
+          <MatchRecap recaps={state.recaps} audience="broadcast" compact />
         </div>
       </div>
 

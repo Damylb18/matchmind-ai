@@ -25,6 +25,7 @@ import { PassingNetworkTab, PassVolume } from "./PassingNetwork";
 import { PitchView } from "./PitchView";
 import { PlayerComparison } from "./PlayerComparison";
 import { ShowcaseProfiles } from "./ShowcaseProfiles";
+import { MatchRecap } from "../MatchRecap";
 import { TacticalInsights } from "./TacticalInsights";
 import { TeamShape } from "./TeamShape";
 import { TeamTrends } from "./TeamTrends";
@@ -78,6 +79,7 @@ export function AnalystDashboard({ state, status, tab, onTabChange, period }: An
 
       {tab === "overview" && (
         <div className="analyst-stack">
+          <MatchRecap recaps={state.recaps} audience="analyst" />
           <div className="grid grid-a-row-1">
             <KeyMetrics teams={summary.teams} metrics={state.metrics} />
             <PitchView events={events} />

@@ -10,6 +10,7 @@ import { Sidebar } from "./components/Sidebar";
 import { useMatchStream } from "./hooks/useMatchStream";
 import { DEFAULT_PERIOD, type Period } from "./lib/analysis";
 import { EvidenceContext } from "./lib/evidenceContext";
+import { NarrativeContext } from "./lib/narrativeContext";
 import type { Mode } from "./types/match";
 
 export default function App() {
@@ -27,44 +28,46 @@ export default function App() {
 
   return (
     <EvidenceContext.Provider value={eventsById}>
-    <div className="app-shell">
-      <Sidebar mode={mode} onModeChange={setMode} status={status} received={state.received} />
+      <NarrativeContext.Provider value={state.narratives}>
+        <div className="app-shell">
+          <Sidebar mode={mode} onModeChange={setMode} status={status} received={state.received} />
 
-      <main className="main-content">
-        {/* Broadcast Mode has its own production top bar. */}
-        {mode !== "broadcast" && (
-          <MatchHeader minute={state.minute} second={state.second} status={status} match={state.match}>
-            {mode === "fan" && <FanTabs tab={fanTab} onChange={setFanTab} />}
+          <main className="main-content">
+            {/* Broadcast Mode has its own production top bar. */}
+            {mode !== "broadcast" && (
+              <MatchHeader minute={state.minute} second={state.second} status={status} match={state.match}>
+                {mode === "fan" && <FanTabs tab={fanTab} onChange={setFanTab} />}
+                {mode === "analyst" && (
+                  <AnalystNav
+                    tab={analystTab}
+                    onTabChange={setAnalystTab}
+                    period={period}
+                    onPeriodChange={setPeriod}
+                    maxMinute={state.minute ?? 90}
+                  />
+                )}
+              </MatchHeader>
+            )}
+
+            {mode === "fan" && <FanDashboard state={state} tab={fanTab} onTabChange={setFanTab} />}
             {mode === "analyst" && (
-              <AnalystNav
+              <AnalystDashboard
+                state={state}
+                status={status}
                 tab={analystTab}
                 onTabChange={setAnalystTab}
                 period={period}
-                onPeriodChange={setPeriod}
-                maxMinute={state.minute ?? 90}
               />
             )}
-          </MatchHeader>
-        )}
+            {mode === "broadcast" && <BroadcastDashboard state={state} status={status} production={production} />}
 
-        {mode === "fan" && <FanDashboard state={state} tab={fanTab} onTabChange={setFanTab} />}
-        {mode === "analyst" && (
-          <AnalystDashboard
-            state={state}
-            status={status}
-            tab={analystTab}
-            onTabChange={setAnalystTab}
-            period={period}
-          />
-        )}
-        {mode === "broadcast" && <BroadcastDashboard state={state} status={status} production={production} />}
-
-        <footer className="page-footer">
-          MatchMind AI · Synthetic match simulation · Player photos via Wikimedia Commons (CC BY-SA 4.0) ·
-          Club names used for identification only
-        </footer>
-      </main>
-    </div>
+            <footer className="page-footer">
+              MatchMind AI · Synthetic match simulation · Player photos via Wikimedia Commons (CC BY-SA 4.0) ·
+              Club names used for identification only
+            </footer>
+          </main>
+        </div>
+      </NarrativeContext.Provider>
     </EvidenceContext.Provider>
   );
 }

@@ -1,10 +1,17 @@
 
 import express from "express";
 import cors from "cors";
+import dotenv from "dotenv";
+import { fileURLToPath } from "node:url";
 import { calculateMetrics } from "./metrics.js";
 import { detectInsights } from "./rules.js";
 import { teams, players, match } from "./data.js";
 import type { EventType, MatchEvent } from "./types.js";
+import { loadAiConfig } from "./ai/config.js";
+import { createMatchAi } from "./ai/matchAi.js";
+
+// Optional settings from api/.env (OpenAI key, model, timings). Never sent to clients.
+dotenv.config({ path: fileURLToPath(new URL("../.env", import.meta.url)), quiet: true });
 
 const app = express();
 
@@ -189,6 +196,14 @@ app.get("/api/players", (_req, res) => {
   res.json(players);
 });
 
+app.get("/api/match/recaps", (_req, res) => {
+  res.json(matchAi.recaps());
+});
+
+app.get("/api/ai/status", (_req, res) => {
+  res.json(matchAi.status());
+});
+
 app.get("/api/match/events", (_req, res) => {
   res.json(events.slice(-100));
 });
@@ -207,6 +222,11 @@ app.get("/api/match/stream", (req, res) => {
       match,
     })}\n\n`
   );
+
+  // Catch up a new or reconnecting client on AI narratives and recaps already produced.
+  for (const message of matchAi.replayMessages()) {
+    res.write(`data: ${JSON.stringify(message)}\n\n`);
+  }
 
   req.on("close", () => {
     clients.delete(res);
@@ -231,6 +251,9 @@ function broadcast(data: unknown) {
     client.write(payload);
   }
 }
+
+// Optional OpenAI narratives and recaps. Runs beside the loop below and never blocks it.
+const matchAi = createMatchAi({ config: loadAiConfig(), teams, publish: broadcast });
 
 let halfTimeTaken = false;
 
@@ -259,6 +282,10 @@ setInterval(() => {
   }
 
   broadcast(result);
+
+  // After the event is sent: AI work is queued and its results arrive as separate messages.
+  matchAi.onInsights(result.insights, match, result.metrics, events);
+  if (result.match.status !== "live") matchAi.onPhase(result.match.status, match, events);
 }, EVENT_INTERVAL_MS);
 
 setInterval(() => {

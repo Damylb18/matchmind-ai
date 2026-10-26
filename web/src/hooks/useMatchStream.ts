@@ -55,6 +55,8 @@ export function useMatchStream() {
           if (payload?.kind === "snapshot") dispatch({ type: "snapshot", match: payload.match });
           else if (payload?.kind === "status") dispatch({ type: "status", match: payload.match });
           else if (payload?.kind === "message") dispatch({ type: "message", message: payload.message });
+          else if (payload?.kind === "narrative") dispatch({ type: "narrative", narrative: payload.narrative });
+          else if (payload?.kind === "recap") dispatch({ type: "recap", recap: payload.recap });
         } catch (error) {
           console.warn("Ignored malformed match message", error);
         }

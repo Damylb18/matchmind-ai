@@ -36,7 +36,7 @@ export function TacticalInsights({
     <Panel
       title="Tactical Insights"
       provenance="session"
-      info={`Detected by the backend rule engine (api/src/rules.ts): fires when a team's last 5 pressure events average at least ${HIGH_PRESSURE_THRESHOLD}. Wording is adapted for analysts from built-in local templates (not Azure AI); the original backend text is shown underneath. Evidence intensity is recomputed from the referenced events this browser received.`}
+      info={`Detected by the backend rule engine (api/src/rules.ts): fires when a team's last 5 pressure events average at least ${HIGH_PRESSURE_THRESHOLD}. Wording comes from OpenAI (generated on the backend from this insight's evidence, when enabled) or from built-in local templates — the badge says which; the original backend text is shown underneath. Evidence intensity is recomputed from the referenced events this browser received.`}
       className={compact ? "tactical-panel compact" : "tactical-panel"}
     >
       {insights.length === 0 ? (
@@ -80,7 +80,7 @@ export function TacticalInsights({
                     <>
                       {text.source === "local-demo-template" && <p className="insight-takeaway">{text.takeaway}</p>}
                       <p className="insight-note">{text.evidenceNote}</p>
-                      {text.source === "local-demo-template" && (
+                      {text.source !== "backend-fallback" && (
                         <p className="insight-original" lang="en">
                           Backend original: “{insight.headline}”
                         </p>
