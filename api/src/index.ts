@@ -1,10 +1,17 @@
 
 import express from "express";
 import cors from "cors";
+import dotenv from "dotenv";
+import { fileURLToPath } from "node:url";
 import { calculateMetrics } from "./metrics.js";
 import { detectInsights } from "./rules.js";
 import { teams, players, match } from "./data.js";
 import type { EventType, MatchEvent, Player } from "./types.js";
+import { loadAiConfig } from "./ai/config.js";
+import { createMatchAi } from "./ai/matchAi.js";
+
+// Optional settings from api/.env (OpenAI key, model, timings). Never sent to clients.
+dotenv.config({ path: fileURLToPath(new URL("../.env", import.meta.url)), quiet: true });
 
 const app = express();
 
@@ -17,7 +24,6 @@ const clients = new Set<import("express").Response>();
 const TEST_MODE = process.env.TEST_MODE === "true";
 
 const SECONDS_PER_EVENT = TEST_MODE ? 60 : 1;
-const EVENT_INTERVAL_MS = TEST_MODE ? 500 : 1000;
 const HALFTIME_BREAK_MS = TEST_MODE ? 1000 : 15_000;
 
 let eventCounter = 0;
@@ -63,7 +69,7 @@ function getPositionCoordinates(
 function createEvent(): MatchEvent {
   eventCounter++;
 
-  
+
   // Repeat a pressure demonstration every 80 events.
   const phase = (eventCounter - 1) % 80;
 
@@ -146,27 +152,27 @@ function createEvent(): MatchEvent {
     const completed = Math.random() > 0.2;
 
     const targetPlayer =
-  completed && recipient
-    ? recipient
-    : teamPlayers[randomNumber(0, teamPlayers.length - 1)]!;
+      completed && recipient
+        ? recipient
+        : teamPlayers[randomNumber(0, teamPlayers.length - 1)]!;
 
-const target = getPositionCoordinates(teamId, targetPlayer.position);
+    const target = getPositionCoordinates(teamId, targetPlayer.position);
 
-if (completed && recipient) {
-  event.recipient_player_id = recipient.id;
-  event.end_x = target.x;
-  event.end_y = target.y;
-} else {
-  // Incomplete passes tend to finish away from the intended target.
-  event.end_x = Math.max(
-    0,
-    Math.min(100, target.x + randomNumber(-12, 12))
-  );
-  event.end_y = Math.max(
-    0,
-    Math.min(100, target.y + randomNumber(-12, 12))
-  );
-}
+    if (completed && recipient) {
+      event.recipient_player_id = recipient.id;
+      event.end_x = target.x;
+      event.end_y = target.y;
+    } else {
+      // Incomplete passes tend to finish away from the intended target.
+      event.end_x = Math.max(
+        0,
+        Math.min(100, target.x + randomNumber(-12, 12))
+      );
+      event.end_y = Math.max(
+        0,
+        Math.min(100, target.y + randomNumber(-12, 12))
+      );
+    }
 
     event.completed = completed;
     event.outcome = completed ? "successful" : "unsuccessful";
@@ -264,6 +270,14 @@ app.get("/api/players", (_req, res) => {
   res.json(players);
 });
 
+app.get("/api/match/recaps", (_req, res) => {
+  res.json(matchAi.recaps());
+});
+
+app.get("/api/ai/status", (_req, res) => {
+  res.json(matchAi.status());
+});
+
 app.get("/api/match/events", (_req, res) => {
   res.json(events.slice(-100));
 });
@@ -283,12 +297,28 @@ app.get("/api/match/stream", (req, res) => {
     })}\n\n`
   );
 
+  // Catch up a new or reconnecting client on AI narratives and recaps already produced.
+  for (const message of matchAi.replayMessages()) {
+    res.write(`data: ${JSON.stringify(message)}\n\n`);
+  }
+
   req.on("close", () => {
     clients.delete(res);
   });
 });
 
 // Generate synthetic match events for the prototype.
+// Match lifecycle. The demo clock advances one second per event, so the event
+// generated at 45:00 starts half-time and the event at 90:00 ends the match.
+const HALF_TIME_SECONDS = 45 * 60;
+const FULL_TIME_SECONDS = 90 * 60;
+// Optional overrides (e.g. accelerated test runs); defaults are the demo values.
+const EVENT_INTERVAL_MS = Number(process.env.EVENT_INTERVAL_MS) || 1000;
+const HALF_TIME_BREAK_MS = Number(process.env.HALF_TIME_BREAK_MS) || 15_000;
+// While no events are generated, a small status message keeps clients informed
+// (and shows the connection is alive). Event payloads keep their existing shape.
+const STATUS_HEARTBEAT_MS = 2000;
+
 function broadcast(data: unknown) {
   const payload = `data: ${JSON.stringify(data)}\n\n`;
 
@@ -332,6 +362,47 @@ setInterval(() => {
     console.log("Match finished");
   }
 }, EVENT_INTERVAL_MS);
+// Optional OpenAI narratives and recaps. Runs beside the loop below and never blocks it.
+const matchAi = createMatchAi({ config: loadAiConfig(), teams, publish: broadcast });
+
+let halfTimeTaken = false;
+
+// Generate synthetic match events for the prototype.
+setInterval(() => {
+  // No events during half-time or after full-time.
+  if (match.status !== "live") return;
+
+  const result = processEvent(createEvent());
+
+  if (!halfTimeTaken && match.clock_seconds >= HALF_TIME_SECONDS) {
+    halfTimeTaken = true;
+    match.status = "half_time";
+    result.match = { ...match };
+
+    setTimeout(() => {
+      match.status = "live";
+      broadcast({ type: "match_status", match: { ...match } });
+      console.log("Second half started");
+    }, HALF_TIME_BREAK_MS);
+    console.log("Half-time");
+  } else if (match.clock_seconds >= FULL_TIME_SECONDS) {
+    match.status = "full_time";
+    result.match = { ...match };
+    console.log("Full-time");
+  }
+
+  broadcast(result);
+
+  // After the event is sent: AI work is queued and its results arrive as separate messages.
+  matchAi.onInsights(result.insights, match, result.metrics, events);
+  if (result.match.status !== "live") matchAi.onPhase(result.match.status, match, events);
+}, EVENT_INTERVAL_MS);
+
+setInterval(() => {
+  if (match.status !== "live") {
+    broadcast({ type: "match_status", match: { ...match } });
+  }
+}, STATUS_HEARTBEAT_MS);
 
 app.listen(4000, () => {
   console.log("MatchMind API running at http://localhost:4000");

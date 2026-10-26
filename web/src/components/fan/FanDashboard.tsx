@@ -1,5 +1,6 @@
 import { useRef, type KeyboardEvent } from "react";
 import type { MatchState } from "../../lib/matchState";
+import { MatchRecap } from "../MatchRecap";
 import { AIInsights } from "./AIInsights";
 import { EventMix } from "./EventMix";
 import { KeyStats } from "./KeyStats";
@@ -76,6 +77,7 @@ export function FanDashboard({ state, tab, onTabChange }: FanDashboardProps) {
 
       {tab === "insights" && (
         <div className="grid grid-insights">
+          <MatchRecap recaps={state.recaps} audience="fan" />
           <AIInsights insights={state.insights} clock={state.clock} limit={20} variant="editorial" />
           <div className="stack">
             <PressureChart points={state.pressure} title="Signal Behind the Insights" />
@@ -99,6 +101,7 @@ export function FanDashboard({ state, tab, onTabChange }: FanDashboardProps) {
 function Overview({ state, onTabChange }: { state: MatchState; onTabChange: (tab: FanTab) => void }) {
   return (
     <div className="overview">
+      <MatchRecap recaps={state.recaps} audience="fan" />
       <div className="grid grid-row-1">
         <MatchMomentum momentum={state.momentum} sessionStart={state.sessionStart} clock={state.clock} />
         <KeyStats teams={state.teams} metrics={state.metrics} sessionStart={state.sessionStart} />

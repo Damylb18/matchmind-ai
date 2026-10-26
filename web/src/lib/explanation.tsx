@@ -1,3 +1,7 @@
+/* MatchMind integration note: this module intentionally exports its provider, hook and
+   adaptInsight together (shared API across modes), so Fast Refresh's component-only rule
+   is disabled here rather than splitting the teammate's module. */
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, type ReactNode } from "react";
 import type { Insight } from "../types/match";
 
@@ -66,7 +70,7 @@ export function useExplanationPreferences() {
   return value;
 }
 
-const LANGUAGE_NAMES: Record<ExplanationLanguage, string> = {
+export const LANGUAGE_NAMES: Record<ExplanationLanguage, string> = {
   en: "English",
   es: "Español",
   fr: "Français",
@@ -94,7 +98,7 @@ const COPY: Record<
         takeaway:
           "Cross-check pressure with territory and chance creation.",
         evidenceNote:
-          "Rule trigger: average pressure intensity above 0.75 across 10 events.",
+          "Rule trigger: average pressure intensity of at least 0.75 across 5 events.",
       },
       broadcast: {
         headline: "{team}: pressure is building",
@@ -177,7 +181,7 @@ const COPY: Record<
           "{team} promedió {average} de intensidad en {events} acciones de presión. Contrasta el dato con la posición en el campo y las ocasiones creadas.",
         takeaway: "Compara la presión con las recuperaciones y los tiros.",
         evidenceNote:
-          "Regla: promedio superior a 0,75 en 10 acciones.",
+          "Regla: promedio igual o superior a 0,75 en 5 acciones.",
       },
       broadcast: {
         headline: "{team}: aumenta la presión",
@@ -253,7 +257,7 @@ const COPY: Record<
           "{team} affiche une moyenne de {average} sur {events} actions de pressing. Comparez cette mesure à la position sur le terrain et aux occasions créées.",
         takeaway: "Croisez la pression avec les récupérations et les tirs.",
         evidenceNote:
-          "Déclencheur : moyenne supérieure à 0,75 sur 10 actions.",
+          "Déclencheur : moyenne supérieure ou égale à 0,75 sur 5 actions.",
       },
       broadcast: {
         headline: "{team} : la pression monte",
@@ -328,7 +332,7 @@ const COPY: Record<
         explanation:
           "{team} ní àpapọ̀ agbára titẹ {average} ní àwọn iṣẹ́ {events}. Fi dátà yìí wé ipò bọ́ọ̀lù lórí pápá àti àwọn ìgbìyànjú sí góòlù.",
         takeaway: "Ṣàyẹ̀wò titẹ, gbígbà bọ́ọ̀lù padà àti ìgbìyànjú sí góòlù.",
-        evidenceNote: "Òfin: àpapọ̀ tó ju 0.75 lọ nínú iṣẹ́ mẹ́wàá.",
+        evidenceNote: "Òfin: àpapọ̀ tó tó 0.75 tàbí jù bẹ́ẹ̀ lọ nínú iṣẹ́ márùn-ún.",
       },
       broadcast: {
         headline: "{team}: titẹ ere ń pọ si",
@@ -426,8 +430,11 @@ function getValues(insight: Insight): Record<string, string> {
 
     return {
       team,
-      average: typeof average === "number" ? average.toFixed(2) : "high",
-      events: typeof events === "number" ? String(events) : "10",
+      // Without a measured average, state the backend rule's trigger threshold. It is
+      // factual and language-neutral (the word "high" was untranslated and unsupported).
+      average: typeof average === "number" ? average.toFixed(2) : "≥ 0.75",
+      // Backend rule window (api/src/rules.ts WINDOW_SIZE).
+      events: typeof events === "number" ? String(events) : "5",
     };
   }
 

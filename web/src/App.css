@@ -229,7 +229,7 @@
   padding: 4px 10px;
   border: 1px solid var(--border-strong);
   border-radius: 999px;
-  background: rgba(9, 13, 20, 0.6);
+  background: rgba(var(--bg-rgb), 0.6);
   font-size: 12px;
   font-weight: 600;
   color: var(--text-2);
@@ -237,7 +237,7 @@
 
 .status-live {
   color: var(--accent);
-  border-color: rgba(43, 212, 154, 0.3);
+  border-color: rgba(var(--accent-rgb), 0.3);
 }
 
 .fixture {
@@ -289,7 +289,7 @@
   padding: 6px 22px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
-  background: rgba(9, 13, 20, 0.75);
+  background: rgba(var(--bg-rgb), 0.75);
   font-size: 30px;
   font-weight: 700;
   color: var(--muted);
@@ -515,7 +515,7 @@
   padding: 10px 12px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
-  background: #0b1018;
+  background: var(--bg-deep);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   color: var(--text-2);
   font-size: 12px;
@@ -657,7 +657,7 @@ select:disabled {
   padding: 6px 9px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
-  background: #0b1018;
+  background: var(--bg-deep);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
   font-size: 11.5px;
   color: var(--text-2);
@@ -1574,7 +1574,7 @@ select:disabled {
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  background: #0b1018;
+  background: var(--bg-deep);
 }
 
 .scorebug-brand {
@@ -1605,7 +1605,7 @@ select:disabled {
   gap: 2px;
   padding: 10px 14px;
   border-left: 3px solid var(--accent);
-  background: rgba(9, 13, 20, 0.92);
+  background: rgba(var(--bg-rgb), 0.92);
 }
 
 .lower-third span {
@@ -1799,4 +1799,408 @@ select:disabled {
   .mode-link svg {
     display: none;
   }
+}
+
+/* ───────────── Insight personalisation ───────────── */
+.sidebar-language {
+  display: grid;
+  gap: 6px;
+  padding: 0 10px;
+}
+
+.sidebar-language .sidebar-label {
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-language select {
+  width: 100%;
+}
+
+.insight-source {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.insight-source.source-backend-fallback {
+  border-style: dashed;
+}
+
+.insight-takeaway {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.insight-note {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+.insight-original {
+  padding-left: 8px;
+  border-left: 2px solid var(--border-strong);
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+@media (max-width: 900px) {
+  .sidebar-language {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-basis: 100%;
+    padding: 0;
+  }
+
+  .sidebar-language select {
+    width: auto;
+  }
+}
+
+/* Half-time / full-time tag in the match header (replaces LIVE while play is stopped). */
+.phase-tag {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ═════════════ Visual identity (submission polish) ═════════════
+   Presentation only: purple broadcast surfaces, lime accents, a dominant
+   scoreboard and distinct match/connection states. */
+
+/* Cards: a faint top highlight gives panels depth without heavy shadows. */
+.panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 48px),
+    var(--surface);
+  transition: border-color 0.2s ease;
+}
+
+.panel:hover {
+  border-color: var(--border-strong);
+}
+
+.panel-head h2 {
+  letter-spacing: -0.01em;
+}
+
+/* Sidebar */
+.sidebar {
+  background: linear-gradient(180deg, var(--brand) -40%, var(--bg-raised) 38%);
+}
+
+.brand-mark {
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.35);
+}
+
+/* Match header — broadcast match-centre treatment */
+.match-header {
+  border-color: var(--border-strong);
+  background:
+    radial-gradient(55% 120% at 50% -35%, rgba(var(--accent-rgb), 0.14), transparent 70%),
+    radial-gradient(40% 90% at 0% 0%, rgba(201, 167, 255, 0.12), transparent 70%),
+    linear-gradient(135deg, var(--brand) 0%, #26032f 55%, var(--bg-raised) 100%);
+}
+
+.match-header-bg {
+  color: rgba(255, 255, 255, 0.07);
+}
+
+.fixture {
+  gap: 36px;
+  padding: 14px 0 18px;
+}
+
+.team-name {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.team-side .team-crest {
+  width: 62px;
+  height: auto;
+}
+
+.score {
+  gap: 18px;
+  min-width: 176px;
+  padding: 6px 26px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 3px solid var(--accent);
+  background: rgba(var(--bg-rgb), 0.72);
+  color: var(--text);
+  font-size: 46px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-sep {
+  color: var(--accent);
+  font-size: 34px;
+}
+
+.match-clock {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.phase-tag.is-ht {
+  background: rgba(201, 167, 255, 0.18);
+  color: var(--info);
+}
+
+.phase-tag.is-ft {
+  background: var(--text);
+  color: var(--brand);
+}
+
+/* Tabs */
+.fan-tabs button[aria-selected="true"],
+.analyst-tabs button[aria-selected="true"] {
+  color: var(--text);
+}
+
+/* Connection states: Live (lime), Reconnecting / No data (amber), Offline (red). */
+.status-pill.status-reconnecting,
+.status-pill.status-stalled {
+  border-color: rgba(255, 194, 71, 0.45);
+  color: var(--warn);
+}
+
+.status-pill.status-offline {
+  border-color: rgba(255, 107, 107, 0.5);
+  color: var(--bad);
+}
+
+.feed-facts dd.feed-live {
+  color: var(--accent);
+}
+
+.feed-facts dd.feed-reconnecting,
+.feed-facts dd.feed-stalled {
+  color: var(--warn);
+}
+
+.feed-facts dd.feed-offline {
+  color: var(--bad);
+}
+
+/* Insights: featured panels, distinct from raw statistics. */
+.insights-panel,
+.tactical-panel {
+  border-color: rgba(var(--accent-rgb), 0.28);
+  background:
+    linear-gradient(180deg, rgba(var(--brand-rgb), 0.9), var(--surface) 140px),
+    var(--surface);
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.insight-icon {
+  background: rgba(var(--bg-rgb), 0.6);
+}
+
+.insight h3 {
+  font-weight: 700;
+}
+
+.insight-source {
+  border-color: rgba(201, 167, 255, 0.4);
+  color: var(--info);
+}
+
+/* Match timeline: broadcast-style minute badges. */
+.event-clock {
+  background: var(--brand);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.event-row {
+  transition: background 0.15s ease;
+}
+
+.event-row:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Language selector sits with the navigation. */
+.sidebar-language select {
+  background-color: var(--surface-2);
+}
+
+@media (max-width: 640px) {
+  .team-name {
+    font-size: 15px;
+  }
+
+  .team-side .team-crest {
+    width: 44px;
+  }
+
+  .score {
+    min-width: 0;
+    gap: 10px;
+    padding: 4px 14px 6px;
+    font-size: 30px;
+  }
+
+  .score-sep {
+    font-size: 24px;
+  }
+
+  .match-clock {
+    font-size: 17px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel,
+  .event-row {
+    transition: none;
+  }
+}
+
+/* --- AI source badge and match recap --- */
+
+.insight-source.source-openai {
+  border-color: rgba(var(--accent-rgb), 0.55);
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--accent);
+}
+
+.recap-panel {
+  gap: 12px;
+  background:
+    linear-gradient(135deg, rgba(var(--brand-rgb), 0.55), transparent 60%),
+    var(--surface);
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.grid-insights > .recap-panel {
+  grid-column: 1 / -1;
+}
+
+.recap-panel .panel-head {
+  flex-wrap: wrap;
+}
+
+.recap-panel .panel-head > .insight-source {
+  margin-left: auto;
+}
+
+.recap-phases {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.recap-phases button {
+  padding: 2px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.recap-phases button.is-active {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.recap-phases button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.recap-score {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.recap-score strong {
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.recap-body {
+  display: grid;
+  gap: 6px;
+  max-width: 80ch;
+}
+
+.recap-body h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.recap-body p {
+  margin: 0;
+  color: var(--text-2);
+  line-height: 1.55;
+}
+
+.recap-body .recap-pending {
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.recap-stats {
+  width: 100%;
+  max-width: 560px;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.recap-stats th,
+.recap-stats td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+}
+
+.recap-stats th[scope="row"] {
+  color: var(--muted);
+  font-weight: 600;
+  text-align: left;
+}
+
+.recap-stats thead th {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.recap-panel.is-compact .recap-score strong {
+  font-size: 18px;
+}
+
+.recap-panel.is-compact .recap-body p {
+  font-size: 13px;
 }

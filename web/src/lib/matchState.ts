@@ -1,4 +1,12 @@
-import type { BackendMatchState, Insight, MatchEvent, MatchMetrics, StreamMessage } from "../types/match";
+import type {
+  BackendMatchState,
+  Insight,
+  InsightNarrative,
+  MatchEvent,
+  MatchMetrics,
+  MatchRecap,
+  StreamMessage,
+} from "../types/match";
 import { MOMENTUM_BIN_SECONDS, momentumWeight, type MomentumBins } from "./momentum";
 
 /** Latest events kept for feeds. Session aggregates below cover every event received. */
@@ -66,6 +74,10 @@ export type MatchState = {
   connections: number;
   /** Set when the feed comes back after a reconnect or a backend restart. */
   recovery: Recovery | null;
+  /** Optional OpenAI wording, keyed by backend insight id. Insights themselves are unchanged. */
+  narratives: Record<string, InsightNarrative>;
+  /** Half-time / full-time recaps from the backend (latest version of each). */
+  recaps: Partial<Record<MatchRecap["phase"], MatchRecap>>;
 };
 
 export type Recovery = {
@@ -95,12 +107,19 @@ export const initialMatchState: MatchState = {
   missed: 0,
   connections: 0,
   recovery: null,
+  narratives: {},
+  recaps: {},
 };
 
 export type MatchAction =
   | { type: "message"; message: StreamMessage }
   /** The match state sent when a connection opens. */
-  | { type: "snapshot"; match: BackendMatchState };
+  | { type: "snapshot"; match: BackendMatchState }
+  /** A status-only update during half-time or after full-time. */
+  | { type: "status"; match: BackendMatchState }
+  /** AI wording for an insight; replaces any earlier narrative for the same insight. */
+  | { type: "narrative"; narrative: InsightNarrative }
+  | { type: "recap"; recap: MatchRecap };
 
 export const emptyCounts = (): CountStats => ({
   events: 0,
@@ -165,6 +184,17 @@ function applySnapshot(state: MatchState, match: BackendMatchState): MatchState 
 
 export function matchReducer(state: MatchState, action: MatchAction): MatchState {
   if (action.type === "snapshot") return applySnapshot(state, action.match);
+  // Status only: score and clock are unchanged by the backend while play is stopped.
+  if (action.type === "status") return { ...state, match: action.match };
+  if (action.type === "narrative") {
+    return { ...state, narratives: { ...state.narratives, [action.narrative.insightId]: action.narrative } };
+  }
+  if (action.type === "recap") {
+    const current = state.recaps[action.recap.phase];
+    // Never let a late "pending" copy replace a finished recap for the same phase.
+    if (current && current.ai_status !== "pending" && action.recap.ai_status === "pending") return state;
+    return { ...state, recaps: { ...state.recaps, [action.recap.phase]: action.recap } };
+  }
 
   const { event, metrics, insights, match } = action.message;
   const seq = sequenceOf(event.event_id);
@@ -238,6 +268,8 @@ export function matchReducer(state: MatchState, action: MatchAction): MatchState
     missed: base.missed + missed,
     connections: base.connections,
     recovery: base.recovery,
+    narratives: base.narratives,
+    recaps: base.recaps,
   };
 }
 

@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { AWAY, HOME, teamByApiName, type TeamInfo } from "../../data/teams";
 import type { BackendMatchState } from "../../types/match";
 import { TeamCrest } from "../TeamCrest";
@@ -31,6 +31,9 @@ export function BroadcastScoreboard({ settings, visible, clock, live, stale, mat
   const home: TeamInfo = (match && teamByApiName(match.home_team_id)) || HOME;
   const away: TeamInfo = (match && teamByApiName(match.away_team_id)) || AWAY;
   const statusLabel = match ? STATUS_LABEL[match.status] : null;
+  const scoreKey = match ? `${match.home_score}-${match.away_score}` : null;
+  // Pulse only for a score change seen while mounted, not on first render or a mode switch.
+  const [mountedScore] = useState(scoreKey);
   const showLive = settings.live && live && !statusLabel;
 
   const crest = (team: TeamInfo) =>
@@ -42,7 +45,7 @@ export function BroadcastScoreboard({ settings, visible, clock, live, stale, mat
 
   // Keyed by the score so a change remounts it and replays the goal pulse.
   const score = match ? (
-    <span key={`${match.home_score}-${match.away_score}`} className="bc-sb-score">
+    <span key={scoreKey} className={scoreKey !== mountedScore ? "bc-sb-score is-new" : "bc-sb-score"}>
       <b>{match.home_score}</b>
       <i aria-hidden="true">–</i>
       <b>{match.away_score}</b>

@@ -1,8 +1,11 @@
 import { teamByApiName } from "../../data/teams";
+import { useExplanationPreferences } from "../../lib/explanation";
+import { personalise } from "../../lib/personalisation";
 import { formatClockSeconds, matchTimeAgo } from "../../lib/format";
 import { HIGH_PRESSURE_THRESHOLD, type InsightEntry } from "../../lib/matchState";
 import type { MatchEvent } from "../../types/match";
 import { Icon } from "../icons/Icon";
+import { InsightSource } from "../InsightSource";
 import { EmptyState, Panel } from "../Panel";
 
 type TacticalInsightsProps = {
@@ -14,7 +17,11 @@ type TacticalInsightsProps = {
   compact?: boolean;
 };
 
-const TYPE_LABELS: Record<string, string> = { pressure_surge: "Pressure surge" };
+const TYPE_LABELS: Record<string, string> = {
+  pressure_surge: "Pressure surge",
+  passing_pattern: "Passing pattern",
+  shot_activity: "Shot activity",
+};
 
 export function TacticalInsights({
   insights,
@@ -24,11 +31,12 @@ export function TacticalInsights({
   limit = 3,
   compact = false,
 }: TacticalInsightsProps) {
+  const { language } = useExplanationPreferences();
   return (
     <Panel
       title="Tactical Insights"
       provenance="session"
-      info={`Backend rule output shown verbatim (api/src/rules.ts): fires when a team's last 10 pressure events average above ${HIGH_PRESSURE_THRESHOLD}. Evidence intensity is recomputed here from the referenced events this browser received.`}
+      info={`Detected by the backend rule engine (api/src/rules.ts): fires when a team's last 5 pressure events average at least ${HIGH_PRESSURE_THRESHOLD}. Wording comes from OpenAI (generated on the backend from this insight's evidence, when enabled) or from built-in local templates — the badge says which; the original backend text is shown underneath. Evidence intensity is recomputed from the referenced events this browser received.`}
       className={compact ? "tactical-panel compact" : "tactical-panel"}
     >
       {insights.length === 0 ? (
@@ -46,6 +54,8 @@ export function TacticalInsights({
             const average = values.length
               ? values.reduce((sum, value) => sum + value, 0) / values.length
               : null;
+            // This panel already holds the period's event map, so personalise against it directly.
+            const text = personalise(insight, "analyst", language, eventsById);
 
             return (
               <li key={insight.key} className="insight">
@@ -56,16 +66,27 @@ export function TacticalInsights({
                 >
                   <Icon name={insight.type === "pressure_surge" ? "pressure" : "insight"} size={18} />
                 </span>
-                <div className="insight-body">
+                <div className="insight-body" lang={text.contentLang}>
                   <div className="insight-title-row">
-                    <h3>{insight.headline}</h3>
+                    <h3>{text.headline}</h3>
                     {clock !== null && (
                       <span className="insight-ago" title="Elapsed match time">
                         {matchTimeAgo(clock, insight.clock)}
                       </span>
                     )}
                   </div>
-                  <p className={compact ? "clamp-2" : undefined}>{insight.explanation}</p>
+                  <p className={compact ? "clamp-2" : undefined}>{text.explanation}</p>
+                  {!compact && (
+                    <>
+                      {text.source === "local-demo-template" && <p className="insight-takeaway">{text.takeaway}</p>}
+                      <p className="insight-note">{text.evidenceNote}</p>
+                      {text.source !== "backend-fallback" && (
+                        <p className="insight-original" lang="en">
+                          Backend original: “{insight.headline}”
+                        </p>
+                      )}
+                    </>
+                  )}
                   <p className="insight-meta">
                     <span>{formatClockSeconds(insight.clock)}</span>
                     <span>{team?.name ?? insight.team}</span>
@@ -74,6 +95,10 @@ export function TacticalInsights({
                     <span>
                       {evidence.length}/{insight.evidence_event_ids.length} evidence events in session
                     </span>
+                    {typeof insight.confidence === "number" && (
+                      <span>Rule confidence {Math.round(insight.confidence * 100)}%</span>
+                    )}
+                    <InsightSource personalised={text} />
                   </p>
                   {!compact && onEvidenceSelect && (
                     <div className="evidence-chips" aria-label="Evidence events">

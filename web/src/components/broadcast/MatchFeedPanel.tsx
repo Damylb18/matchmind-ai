@@ -2,7 +2,9 @@ import { AWAY, HOME, teamByApiName } from "../../data/teams";
 import { EVENT_LABELS, formatClock, formatClockSeconds, STATUS_TEXT } from "../../lib/format";
 import type { MatchState } from "../../lib/matchState";
 import type { ConnectionStatus, MatchEvent } from "../../types/match";
+import { usePersonaliser } from "../../hooks/usePersonaliser";
 import { Icon } from "../icons/Icon";
+import { InsightSource } from "../InsightSource";
 import { TeamCrest } from "../TeamCrest";
 
 const FEED_LENGTH = 6;
@@ -38,6 +40,8 @@ export function MatchFeedPanel({ state, status }: MatchFeedPanelProps) {
   const away = (match && teamByApiName(match.away_team_id)) || AWAY;
   const events = state.events.slice(0, FEED_LENGTH);
   const insight = state.insights[0];
+  const personalise = usePersonaliser("broadcast");
+  const insightText = insight ? personalise(insight) : null;
   const updating = status === "live";
 
   return (
@@ -92,10 +96,12 @@ export function MatchFeedPanel({ state, status }: MatchFeedPanelProps) {
 
       <div className="bc-feed-insight">
         <span className="bc-feed-label">Latest backend insight</span>
-        {insight ? (
+        {insight && insightText ? (
           <p>
-            <strong>{insight.headline}</strong>
-            <span>{formatClockSeconds(insight.clock)}</span>
+            <strong lang={insightText.contentLang}>{insightText.headline}</strong>
+            <span>
+              {formatClockSeconds(insight.clock)} <InsightSource personalised={insightText} />
+            </span>
           </p>
         ) : (
           <p className="muted">None yet — insights fire on sustained high pressure.</p>

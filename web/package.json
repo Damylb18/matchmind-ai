@@ -7,6 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test": "npm run test:explanations && npm run test:ai",
+    "test:explanations": "node scripts/check-explanations.mjs",
+    "test:ai": "node scripts/check-ai-stream.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -1,6 +1,7 @@
 import type { ConnectionStatus, Mode } from "../types/match";
 import { STATUS_TEXT } from "../lib/format";
 import { Icon, type IconName } from "./icons/Icon";
+import { LanguageSelect } from "./LanguageSelect";
 
 const MODES: { id: Mode; label: string; icon: IconName }[] = [
   { id: "fan", label: "Fan Mode", icon: "fan" },
@@ -42,6 +43,8 @@ export function Sidebar({ mode, onModeChange, status, received }: SidebarProps) 
           </button>
         ))}
       </nav>
+
+      <LanguageSelect />
 
       <div className="sidebar-section">
         <p className="sidebar-label">Data feed</p>

@@ -2,6 +2,8 @@ import { AWAY, HOME, TEAMS, teamByApiName } from "../../data/teams";
 import { formatClockSeconds } from "../../lib/format";
 import type { CountStats, InsightEntry, PressurePoint } from "../../lib/matchState";
 import type { BackendMatchState, MatchMetrics } from "../../types/match";
+import { usePersonaliser } from "../../hooks/usePersonaliser";
+import { SOURCE_LABEL } from "../../lib/personalisation";
 import { TeamCrest } from "../TeamCrest";
 import { BroadcastScoreboard } from "./BroadcastScoreboard";
 import { TACTICAL_LABELS, type TransitionType } from "./graphics";
@@ -174,27 +176,37 @@ function PlayerScene({ profileId }: { profileId: string }) {
   );
 }
 
+const INSIGHT_TYPE_LABELS: Record<string, string> = {
+  pressure_surge: "Pressure surge",
+  passing_pattern: "Passing pattern",
+  shot_activity: "Shot activity",
+};
+
 function FullInsight({ insight }: { insight: InsightEntry | null }) {
+  const personalise = usePersonaliser("broadcast");
   if (!insight) {
     return (
       <div className="bc-card bc-insight-card is-empty">
-        <span className="bc-eyebrow">MatchMind AI insight</span>
+        <span className="bc-eyebrow">MatchMind insight</span>
         <strong>Awaiting the first backend insight</strong>
         <p>Insights appear when the rule engine detects sustained high pressure.</p>
       </div>
     );
   }
   const team = teamByApiName(insight.team);
+  const text = personalise(insight);
   return (
-    <div className="bc-card bc-insight-card" style={{ borderColor: team?.colors.data }}>
-      <span className="bc-eyebrow">MatchMind AI insight · {formatClockSeconds(insight.clock)}</span>
-      <strong>{insight.headline}</strong>
-      <p>{insight.explanation}</p>
+    <div className="bc-card bc-insight-card" style={{ borderColor: team?.colors.data }} lang={text.contentLang}>
+      <span className="bc-eyebrow">MatchMind rule-based insight · {formatClockSeconds(insight.clock)}</span>
+      <strong>{text.headline}</strong>
+      <p>{text.explanation}</p>
+      {text.source === "local-demo-template" && <p className="bc-insight-takeaway">{text.takeaway}</p>}
       <footer>
         {team && <TeamCrest team={team} size={22} />}
         <span>{team?.name ?? insight.team}</span>
-        <span>Pressure surge</span>
+        <span>{INSIGHT_TYPE_LABELS[insight.type] ?? insight.type}</span>
         <span>{insight.evidence_event_ids.length} evidence events</span>
+        <span>{SOURCE_LABEL[text.source]} wording</span>
       </footer>
     </div>
   );
