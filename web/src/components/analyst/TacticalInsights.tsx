@@ -36,7 +36,7 @@ export function TacticalInsights({
     <Panel
       title="Tactical Insights"
       provenance="session"
-      info={`Detected by the backend rule engine (api/src/rules.ts): fires when a team's last 10 pressure events average above ${HIGH_PRESSURE_THRESHOLD}. Wording is adapted for analysts from built-in local templates (not Azure AI); the original backend text is shown underneath. Evidence intensity is recomputed from the referenced events this browser received.`}
+      info={`Detected by the backend rule engine (api/src/rules.ts): fires when a team's last 5 pressure events average at least ${HIGH_PRESSURE_THRESHOLD}. Wording is adapted for analysts from built-in local templates (not Azure AI); the original backend text is shown underneath. Evidence intensity is recomputed from the referenced events this browser received.`}
       className={compact ? "tactical-panel compact" : "tactical-panel"}
     >
       {insights.length === 0 ? (

@@ -3,7 +3,8 @@
  * real stream adapter and reducer. Used by the fixture harness (?insight-fixtures in
  * `npm run dev`) and scripts/check-explanations.mjs. Never imported by the live app.
  *
- * pressure_surge mirrors the current backend rule exactly. passing_pattern and
+ * pressure_surge mirrors the current backend rule exactly (api/src/rules.ts: 5-event
+ * window, average >= 0.75, average included in the explanation). passing_pattern and
  * shot_activity are NOT emitted by the current backend; they follow the shapes the
  * personalisation templates expect, including the optional structured `data` field.
  */
@@ -29,8 +30,8 @@ function rawEvent(n: number, team: string, player: string, type: string, extra: 
   };
 }
 
-// Arsenal pressure sequence: evt_1201–evt_1210, average 0.91.
-const PRESSURE = [0.88, 0.93, 0.9, 0.95, 0.87, 0.92, 0.89, 0.94, 0.91, 0.91];
+// Arsenal pressure sequence: evt_1201–evt_1205 (the backend's 5-event window), average 0.91.
+const PRESSURE = [0.88, 0.93, 0.9, 0.95, 0.89];
 const pressureEvents = PRESSURE.map((value, index) =>
   rawEvent(1201 + index, "arsenal", index % 2 ? "ars_10" : "ars_8", "pressure", { pressure: value }),
 );
@@ -56,9 +57,9 @@ export const FIXTURE_INSIGHTS = {
     // Exactly what api/src/rules.ts sends today: team ID in the text, no `data`.
     id: "insight_fx_1",
     type: "pressure_surge",
-    headline: "arsenal: pressure is building",
+    headline: "arsenal: sustained pressure is building",
     explanation:
-      "arsenal has recorded high pressure intensity across 10 recent pressure events. This indicates pressure intensity, not necessarily territorial control or scoring threat.",
+      "arsenal recorded an average pressure intensity of 0.91 across 5 recent pressure events. This indicates sustained pressing intensity, not necessarily territorial control or scoring threat.",
     minute: 20,
     team_id: "arsenal",
     confidence: 0.9,
@@ -106,7 +107,7 @@ export function fixtureMessages(): unknown[] {
     (a, b) => Number(a.event_id.slice(4)) - Number(b.event_id.slice(4)),
   );
   const trigger: Record<string, unknown[]> = {
-    evt_1210: [FIXTURE_INSIGHTS.pressure_surge],
+    evt_1205: [FIXTURE_INSIGHTS.pressure_surge],
     evt_1220: [FIXTURE_INSIGHTS.passing_pattern],
     evt_1227: [FIXTURE_INSIGHTS.shot_activity, FIXTURE_UNKNOWN_TYPE],
   };

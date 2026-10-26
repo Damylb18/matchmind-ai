@@ -5,9 +5,9 @@ import type { ConnectionStatus } from "../../types/match";
 import type { ProductionState } from "./productionState";
 
 /** Mirrors WINDOW_SIZE in api/src/rules.ts. */
-export const ROLLING_WINDOW = 10;
+export const ROLLING_WINDOW = 5;
 
-/** Average of a team's last ten pressure events — the signal the backend insight rule uses. */
+/** Average of a team's last ROLLING_WINDOW pressure events — the signal the backend insight rule uses. */
 export function rollingPressure(points: PressurePoint[], team: string): number | null {
   const own = points.filter((point) => point.team === team).slice(-ROLLING_WINDOW);
   if (!own.length) return null;

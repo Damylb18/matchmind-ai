@@ -8,7 +8,7 @@ import { Icon } from "../icons/Icon";
 import { InsightSource } from "../InsightSource";
 import { Field, Segmented, Switch } from "./controls";
 import { TACTICAL_LABELS, type TacticalGraphic } from "./graphics";
-import { rollingPressure } from "./liveData";
+import { rollingPressure, ROLLING_WINDOW } from "./liveData";
 import type {
   BannerPosition,
   BoardPosition,
@@ -384,7 +384,7 @@ function TacticalTab({
       </Field>
       <p className="bc-note">
         Illustrative: the feed has no player coordinates, so formations, positions and zones are simulated.
-        {videoActive && " Annotations are drawn on the synthetic pitch only."} Live pressure (last 10 events):{" "}
+        {videoActive && " Annotations are drawn on the synthetic pitch only."} Live pressure (last {ROLLING_WINDOW} events):{" "}
         {HOME.code} {fmt(rollingPressure(pressure, HOME.apiName))} · {AWAY.code}{" "}
         {fmt(rollingPressure(pressure, AWAY.apiName))}.
       </p>

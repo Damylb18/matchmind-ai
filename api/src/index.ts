@@ -30,20 +30,23 @@ function createEvent(): MatchEvent {
   let teamId: string;
   let pressure: number | undefined;
 
-  // Shorter, less frequent pressure spells.
-  if (phase < 3) {
+  // Man Utd: five high-pressure events, then three low-pressure events.
+  if (phase < 5) {
     eventType = "pressure";
     teamId = "man_utd";
-    pressure = 0.65 + Math.random() * 0.20;
-  } else if (phase >= 3 && phase < 6) {
+    pressure = 0.78 + Math.random() * 0.14;
+  } else if (phase < 8) {
     eventType = "pressure";
     teamId = "man_utd";
     pressure = 0.10 + Math.random() * 0.20;
-  } else if (phase >= 40 && phase < 43) {
+  }
+
+  // Arsenal: five high-pressure events, then three low-pressure events.
+  else if (phase >= 40 && phase < 45) {
     eventType = "pressure";
     teamId = "arsenal";
-    pressure = 0.65 + Math.random() * 0.20;
-  } else if (phase >= 43 && phase < 46) {
+    pressure = 0.78 + Math.random() * 0.14;
+  } else if (phase >= 45 && phase < 48) {
     eventType = "pressure";
     teamId = "arsenal";
     pressure = 0.10 + Math.random() * 0.20;

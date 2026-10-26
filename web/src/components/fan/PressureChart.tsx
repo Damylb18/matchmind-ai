@@ -8,7 +8,7 @@ const W = 600;
 const H = 150;
 const PAD_Y = 8;
 /** Mirrors WINDOW_SIZE in api/src/rules.ts. */
-const ROLLING_WINDOW = 10;
+const ROLLING_WINDOW = 5;
 
 type PressureChartProps = { points: PressurePoint[]; title?: string };
 
@@ -17,7 +17,7 @@ export function PressureChart({ points, title = "Pressure Intensity" }: Pressure
 
   const info =
     "Every pressure event from the feed (0–1 intensity). Lines show each team's rolling average of its last " +
-    `${ROLLING_WINDOW} pressure events — the same signal the backend uses to trigger insights when it exceeds ` +
+    `${ROLLING_WINDOW} pressure events — the same signal the backend uses to trigger insights when it reaches ` +
     `${HIGH_PRESSURE_THRESHOLD}.`;
 
   if (points.length === 0) {

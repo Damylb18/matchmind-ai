@@ -68,15 +68,29 @@ try {
   }
 
   const pressure = personalise(byType.pressure_surge, "fan", "en", eventsById);
-  check("pressure average recomputed from all 10 received evidence events",
-    pressure.derivedFromEvidence && pressure.evidenceReceived === 10 && pressure.evidenceTotal === 10);
+  check("pressure average recomputed from all 5 received evidence events",
+    pressure.derivedFromEvidence && pressure.evidenceReceived === 5 && pressure.evidenceTotal === 5);
+
+  // The backend rule is a 5-event window at >= 0.75: no wording may still state 10 events.
+  for (const audience of audiences) {
+    for (const language of languages) {
+      const out = personalise(byType.pressure_surge, audience, language, eventsById);
+      const all = `${out.explanation} ${out.evidenceNote}`;
+      check(`pressure ${audience}/${language}: no 10-event rule`, !/\b10\b|mẹ́wàá/.test(all), all);
+      if (/\d/.test(out.explanation.replace("0.91", ""))) {
+        check(`pressure ${audience}/${language}: states 5 events`, /\b5\b/.test(out.explanation), out.explanation);
+      }
+    }
+    const note = personalise(byType.pressure_surge, "analyst", "en", eventsById).evidenceNote;
+    check("analyst evidence note states the 5-event, >= 0.75 rule", /at least 0\.75 across 5 events/.test(note), note);
+  }
 
   // Missing evidence: no invented average, and no untranslated "high" in other languages.
   const partial = new Map([...eventsById].slice(0, 3));
   for (const language of languages) {
     const out = personalise(byType.pressure_surge, "fan", language, partial);
     check(`partial evidence (${language}): threshold, not an invented value`,
-      !out.derivedFromEvidence && out.explanation.includes("> 0.75") && !/\bhigh\b/.test(out.explanation), out.explanation);
+      !out.derivedFromEvidence && out.explanation.includes("≥ 0.75") && !/\bhigh\b/.test(out.explanation), out.explanation);
   }
 
   // No template for this type: original backend wording, labelled as such.
@@ -88,7 +102,7 @@ try {
   }
 
   // Backend insight text: team IDs shown as names, wording otherwise unchanged.
-  check("backend headline humanised", byType.pressure_surge.headline === "Arsenal: pressure is building");
+  check("backend headline humanised", byType.pressure_surge.headline === "Arsenal: sustained pressure is building");
 
   // insights: [] must never produce an insight.
   let empty = initialMatchState;
