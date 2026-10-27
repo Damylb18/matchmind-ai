@@ -24,7 +24,8 @@ const clients = new Set<import("express").Response>();
 const TEST_MODE = process.env.TEST_MODE === "true";
 
 const SECONDS_PER_EVENT = TEST_MODE ? 60 : 1;
-const HALFTIME_BREAK_MS = TEST_MODE ? 1000 : 15_000;
+const HALF_TIME_SECONDS = 45 * 60;
+const FULL_TIME_SECONDS = 90 * 60;
 
 let eventCounter = 0;
 let halftimeStarted = false;
@@ -123,7 +124,10 @@ function createEvent(): MatchEvent {
   // Normalised coordinates: 0–100 across the pitch.
   const { x, y } = getPositionCoordinates(teamId, player.position);
 
-  const simulatedSeconds = Math.min(eventCounter * SECONDS_PER_EVENT, 5400);
+  const simulatedSeconds = Math.min(
+    eventCounter * SECONDS_PER_EVENT,
+    FULL_TIME_SECONDS
+  );
 
   const event: MatchEvent = {
     event_id: `evt_${eventCounter}`,
@@ -220,14 +224,14 @@ function processEvent(event: MatchEvent) {
   // Advance the simulated match clock.
   const simulatedSeconds = Math.min(
     eventCounter * SECONDS_PER_EVENT,
-    5400
+    FULL_TIME_SECONDS
   );
 
   match.clock_seconds = simulatedSeconds;
 
-  if (simulatedSeconds >= 5400) {
+  if (simulatedSeconds >= FULL_TIME_SECONDS) {
     match.status = "full_time";
-  } else if (simulatedSeconds >= 2700 && !halftimeStarted) {
+  } else if (simulatedSeconds >= HALF_TIME_SECONDS && !halftimeStarted) {
     match.status = "half_time";
   } else {
     match.status = "live";
@@ -307,14 +311,12 @@ app.get("/api/match/stream", (req, res) => {
   });
 });
 
-// Generate synthetic match events for the prototype.
 // Match lifecycle. The demo clock advances one second per event, so the event
 // generated at 45:00 starts half-time and the event at 90:00 ends the match.
-const HALF_TIME_SECONDS = 45 * 60;
-const FULL_TIME_SECONDS = 90 * 60;
 // Optional overrides (e.g. accelerated test runs); defaults are the demo values.
 const EVENT_INTERVAL_MS = Number(process.env.EVENT_INTERVAL_MS) || 1000;
-const HALF_TIME_BREAK_MS = Number(process.env.HALF_TIME_BREAK_MS) || 15_000;
+const HALF_TIME_BREAK_MS =
+  Number(process.env.HALF_TIME_BREAK_MS) || (TEST_MODE ? 1000 : 15_000);
 // While no events are generated, a small status message keeps clients informed
 // (and shows the connection is alive). Event payloads keep their existing shape.
 const STATUS_HEARTBEAT_MS = 2000;
@@ -327,8 +329,10 @@ function broadcast(data: unknown) {
   }
 }
 
-let halftimeTimer: ReturnType<typeof setTimeout> | undefined;
+// Optional OpenAI narratives and recaps. Runs beside the match loop and never blocks it.
+const matchAi = createMatchAi({ config: loadAiConfig(), teams, publish: broadcast });
 
+// Generate synthetic match events for the prototype.
 setInterval(() => {
   // Stop generating events during breaks or after full-time.
   if (match.status === "half_time" || match.status === "full_time") {
@@ -340,9 +344,14 @@ setInterval(() => {
   // Preserve the existing event payload.
   broadcast(result);
 
+  // After the event is sent: AI work is queued and its results arrive as separate messages.
+  matchAi.onInsights(result.insights, match, result.metrics, events);
+
   // Start the halftime break once.
-  if (result.match.status === "half_time" && !halftimeStarted) {
+  if (result.match.status === "half_time") {
     halftimeStarted = true;
+    matchAi.onPhase("half_time", match, events);
+    console.log("Half-time");
 
     setTimeout(() => {
       if (match.status !== "half_time") return;
@@ -355,47 +364,13 @@ setInterval(() => {
       });
 
       console.log("Second half started");
-    }, HALFTIME_BREAK_MS);
+    }, HALF_TIME_BREAK_MS);
   }
 
   if (result.match.status === "full_time") {
+    matchAi.onPhase("full_time", match, events);
     console.log("Match finished");
   }
-}, EVENT_INTERVAL_MS);
-// Optional OpenAI narratives and recaps. Runs beside the loop below and never blocks it.
-const matchAi = createMatchAi({ config: loadAiConfig(), teams, publish: broadcast });
-
-let halfTimeTaken = false;
-
-// Generate synthetic match events for the prototype.
-setInterval(() => {
-  // No events during half-time or after full-time.
-  if (match.status !== "live") return;
-
-  const result = processEvent(createEvent());
-
-  if (!halfTimeTaken && match.clock_seconds >= HALF_TIME_SECONDS) {
-    halfTimeTaken = true;
-    match.status = "half_time";
-    result.match = { ...match };
-
-    setTimeout(() => {
-      match.status = "live";
-      broadcast({ type: "match_status", match: { ...match } });
-      console.log("Second half started");
-    }, HALF_TIME_BREAK_MS);
-    console.log("Half-time");
-  } else if (match.clock_seconds >= FULL_TIME_SECONDS) {
-    match.status = "full_time";
-    result.match = { ...match };
-    console.log("Full-time");
-  }
-
-  broadcast(result);
-
-  // After the event is sent: AI work is queued and its results arrive as separate messages.
-  matchAi.onInsights(result.insights, match, result.metrics, events);
-  if (result.match.status !== "live") matchAi.onPhase(result.match.status, match, events);
 }, EVENT_INTERVAL_MS);
 
 setInterval(() => {
