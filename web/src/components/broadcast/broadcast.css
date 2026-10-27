@@ -534,8 +534,10 @@ label.bc-btn {
 
 .bc-plane {
   position: absolute;
-  left: 9%;
-  right: 9%;
+  /* The perspective projection enlarges the near edge. Keep the source plane
+     narrow enough that the projected pitch still fits inside the 16:9 frame. */
+  left: 21%;
+  right: 21%;
   top: 25%;
   transform: rotateX(50deg);
   transform-origin: 50% 0%;
