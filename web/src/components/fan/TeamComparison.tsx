@@ -16,7 +16,7 @@ type TeamComparisonProps = {
 };
 
 const DEFAULT_INFO =
-  "Counted from events received since this browser connected. Bars compare the two values in each row.";
+  "Counted from the current demo match history supplied by the backend. Bars compare the two values in each row.";
 
 export function TeamComparison({
   teams,
@@ -65,7 +65,7 @@ export function TeamComparison({
         </span>
       </div>
       <table className="comparison">
-        <caption className="sr-only">Team comparison for this live session</caption>
+        <caption className="sr-only">Team comparison for the current match</caption>
         <thead className="sr-only">
           <tr>
             <th scope="col">{HOME.name}</th>

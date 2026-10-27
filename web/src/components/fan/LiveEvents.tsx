@@ -47,7 +47,7 @@ export function LiveEvents({
     <Panel
       title={title}
       provenance="session"
-      info="Events streamed from the backend since this browser connected. Player names are synthetic IDs from the demo feed."
+      info="Recent events from the current demo match. Player names are synthetic IDs from the demo feed."
       className="events-panel"
       actions={
         onViewAll && (

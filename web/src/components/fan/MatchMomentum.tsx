@@ -30,7 +30,7 @@ const INFO =
   `incomplete pass ${MOMENTUM_WEIGHTS.incompletePass}, shot ${MOMENTUM_WEIGHTS.shot}, ` +
   `tackle ${MOMENTUM_WEIGHTS.tackle}, pressure ${MOMENTUM_WEIGHTS.pressurePerUnit} × intensity. ` +
   `Per ${MOMENTUM_BIN_SECONDS}-second bin: (home − away) ÷ (home + away), smoothed over 3 bins. ` +
-  "Only events received since this browser connected are included.";
+  "The current demo match history is supplied by the backend when the browser connects.";
 
 export function MatchMomentum({ momentum, sessionStart, clock }: MatchMomentumProps) {
   const [range, setRange] = useState<Range>("session");
@@ -45,7 +45,7 @@ export function MatchMomentum({ momentum, sessionStart, clock }: MatchMomentumPr
           aria-pressed={range === item}
           onClick={() => setRange(item)}
         >
-          {item === "session" ? "Session" : "90 min"}
+          {item === "session" ? "Current" : "90 min"}
         </button>
       ))}
     </div>
@@ -60,6 +60,7 @@ export function MatchMomentum({ momentum, sessionStart, clock }: MatchMomentumPr
   }
 
   const fromSec = range === "match" ? 0 : Math.floor(sessionStart / 60) * 60;
+  const historyStartsLate = sessionStart > MOMENTUM_BIN_SECONDS;
   const toSec =
     range === "match"
       ? Math.max(90 * 60, Math.ceil((clock + 1) / 60) * 60)
@@ -119,7 +120,7 @@ export function MatchMomentum({ momentum, sessionStart, clock }: MatchMomentumPr
               </pattern>
             </defs>
 
-            {sessionStart > fromSec && (
+            {historyStartsLate && sessionStart > fromSec && (
               <rect x={0} y={0} width={x(sessionStart)} height={H} fill="url(#no-data)" />
             )}
 
@@ -170,7 +171,7 @@ export function MatchMomentum({ momentum, sessionStart, clock }: MatchMomentumPr
       </div>
 
       <p className="panel-footnote">
-        {sessionStart > fromSec ? "Hatched: before this session connected. " : ""}
+        {historyStartsLate && sessionStart > fromSec ? "Hatched: unavailable before the retained history. " : ""}
         Event-weighted estimate, not an official metric.
       </p>
     </Panel>

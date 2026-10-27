@@ -52,7 +52,7 @@ export function useMatchStream() {
         setStatus("live");
         try {
           const payload = adaptStreamPayload(JSON.parse(message.data));
-          if (payload?.kind === "snapshot") dispatch({ type: "snapshot", match: payload.match });
+          if (payload?.kind === "snapshot") dispatch({ type: "snapshot", match: payload.match, history: payload.history });
           else if (payload?.kind === "status") dispatch({ type: "status", match: payload.match });
           else if (payload?.kind === "message") dispatch({ type: "message", message: payload.message });
           else if (payload?.kind === "narrative") dispatch({ type: "narrative", narrative: payload.narrative });

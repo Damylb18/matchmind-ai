@@ -29,13 +29,11 @@ function sessionRows(teams: Record<string, CountStats>): Row[] {
 
 const show = (row: Row, value: number | null) => (value === null ? "–" : row.fmt ? row.fmt(value) : String(value));
 
-const sessionNote = (sessionStart: number | null) =>
-  sessionStart === null ? "Live session" : `Live session since ${formatClockSeconds(sessionStart)}`;
+const sessionNote = "Current match";
 
-/** Compact strip overlay: four session metrics. */
+/** Compact strip overlay: four current-match metrics. */
 export function StatsStrip({
   teams,
-  sessionStart,
   visible,
 }: {
   teams: Record<string, CountStats>;
@@ -58,7 +56,7 @@ export function StatsStrip({
       <span className="bc-strip-team">
         {AWAY.code} <TeamCrest team={AWAY} size={18} />
       </span>
-      <span className="bc-strip-note">{sessionNote(sessionStart)}</span>
+      <span className="bc-strip-note">{sessionNote}</span>
     </div>
   );
 }
@@ -125,7 +123,6 @@ export function InsightTicker({ insights, visible }: { insights: InsightEntry[];
 export function StatsScene({
   teams,
   metrics,
-  sessionStart,
 }: {
   teams: Record<string, CountStats>;
   metrics: MatchMetrics | null;
@@ -163,7 +160,7 @@ export function StatsScene({
         );
       })}
       <footer className="bc-stats-foot">
-        <span>{sessionNote(sessionStart)} · not full-match statistics</span>
+        <span>{sessionNote} · demo event statistics</span>
         <span>
           Match total pass accuracy, both teams: <b>{metrics ? `${metrics.pass_accuracy}%` : "–"}</b>
         </span>

@@ -4,9 +4,9 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { fileURLToPath } from "node:url";
 import { calculateMetrics } from "./metrics.js";
-import { detectInsights } from "./rules.js";
+import { detectInsights, resetInsightDetection } from "./rules.js";
 import { teams, players, match } from "./data.js";
-import type { EventType, MatchEvent, Player } from "./types.js";
+import type { EventType, Insight, MatchEvent, Player } from "./types.js";
 import { loadAiConfig } from "./ai/config.js";
 import { createMatchAi } from "./ai/matchAi.js";
 
@@ -19,6 +19,7 @@ app.use(cors());
 app.use(express.json());
 
 const events: MatchEvent[] = [];
+const eventHistory: { event: MatchEvent; insights: Insight[] }[] = [];
 const clients = new Set<import("express").Response>();
 
 const TEST_MODE = process.env.TEST_MODE === "true";
@@ -29,6 +30,7 @@ const FULL_TIME_SECONDS = 90 * 60;
 
 let eventCounter = 0;
 let halftimeStarted = false;
+let matchSequence = 1;
 
 function randomNumber(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -297,7 +299,9 @@ app.get("/api/match/stream", (req, res) => {
   res.write(
     `data: ${JSON.stringify({
       type: "connected",
-      match,
+      match: { ...match },
+      metrics: calculateMetrics(events),
+      history: eventHistory,
     })}\n\n`
   );
 
@@ -317,6 +321,7 @@ app.get("/api/match/stream", (req, res) => {
 const EVENT_INTERVAL_MS = Number(process.env.EVENT_INTERVAL_MS) || 1000;
 const HALF_TIME_BREAK_MS =
   Number(process.env.HALF_TIME_BREAK_MS) || (TEST_MODE ? 1000 : 15_000);
+const AUTO_RESTART_MS = Number(process.env.AUTO_RESTART_MS) || (TEST_MODE ? 1000 : 15_000);
 // While no events are generated, a small status message keeps clients informed
 // (and shows the connection is alive). Event payloads keep their existing shape.
 const STATUS_HEARTBEAT_MS = 2000;
@@ -330,7 +335,46 @@ function broadcast(data: unknown) {
 }
 
 // Optional OpenAI narratives and recaps. Runs beside the match loop and never blocks it.
-const matchAi = createMatchAi({ config: loadAiConfig(), teams, publish: broadcast });
+// Each instance belongs to one match. Late results from a completed match are discarded.
+const aiConfig = loadAiConfig();
+
+function createAiForCurrentMatch() {
+  const matchId = match.match_id;
+  return createMatchAi({
+    config: aiConfig,
+    teams,
+    publish: (message) => {
+      if (match.match_id === matchId) broadcast(message);
+    },
+  });
+}
+
+let matchAi = createAiForCurrentMatch();
+
+function restartMatch(): void {
+  matchSequence++;
+  eventCounter = 0;
+  halftimeStarted = false;
+  events.length = 0;
+  eventHistory.length = 0;
+  resetInsightDetection();
+
+  match.match_id = `match_${String(matchSequence).padStart(3, "0")}`;
+  match.home_score = 0;
+  match.away_score = 0;
+  match.clock_seconds = 0;
+  match.status = "live";
+  matchAi = createAiForCurrentMatch();
+
+  // Existing browsers reset immediately; new browsers receive the same snapshot on connect.
+  broadcast({
+    type: "connected",
+    match: { ...match },
+    metrics: calculateMetrics(events),
+    history: eventHistory,
+  });
+  console.log(`New demo match started (${match.match_id})`);
+}
 
 // Generate synthetic match events for the prototype.
 setInterval(() => {
@@ -340,6 +384,7 @@ setInterval(() => {
   }
 
   const result = processEvent(createEvent());
+  eventHistory.push({ event: result.event, insights: result.insights });
 
   // Preserve the existing event payload.
   broadcast(result);
@@ -370,6 +415,11 @@ setInterval(() => {
   if (result.match.status === "full_time") {
     matchAi.onPhase("full_time", match, events);
     console.log("Match finished");
+
+    const finishedMatchId = match.match_id;
+    setTimeout(() => {
+      if (match.match_id === finishedMatchId && match.status === "full_time") restartMatch();
+    }, AUTO_RESTART_MS);
   }
 }, EVENT_INTERVAL_MS);
 

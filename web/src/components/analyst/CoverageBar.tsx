@@ -39,7 +39,7 @@ export function CoverageBar({
     partial: `Only ${pctText}% of the period played so far is covered — this browser joined at ${
       sessionStart === null ? "--:--" : formatClockSeconds(sessionStart)
     }.`,
-    complete: "Every event played in this period so far was received in this session.",
+    complete: "The current match history covers this period so far.",
   }[coverage.status];
 
   return (

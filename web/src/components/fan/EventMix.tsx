@@ -15,7 +15,7 @@ export function EventMix({ teams }: { teams: Record<string, CountStats> }) {
     <Panel
       title="Event Mix"
       provenance="session"
-      info="Share of each team's events by type, from events received since this browser connected."
+      info="Share of each team's events by type in the current demo match."
       className="mix-panel"
     >
       <div className="mix-rows">

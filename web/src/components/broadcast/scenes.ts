@@ -30,7 +30,7 @@ export const SCENES: SceneDef[] = [
   {
     id: "stats",
     title: "Stats Comparison",
-    description: "Team comparison from this live session",
+    description: "Team comparison from the current match",
     defaultDuration: 8,
   },
   {

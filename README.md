@@ -237,10 +237,14 @@ A full match takes 90 minutes at the default one event per second. To reach half
 
 ```bash
 cd api
-EVENT_INTERVAL_MS=40 HALF_TIME_BREAK_MS=8000 npm run dev
+EVENT_INTERVAL_MS=40 HALF_TIME_BREAK_MS=8000 AUTO_RESTART_MS=10000 npm run dev
 ```
 
-At 40 ms per event a match lasts about 4 minutes. The same variables can be set in `api/.env` instead.
+At 40 ms per event a match lasts about 4 minutes. After full-time, the API keeps the result visible for
+`AUTO_RESTART_MS` and then starts a fresh match automatically. The same variables can be set in `api/.env` instead.
+
+New and refreshed browsers receive the current match history before live events continue. This keeps the
+clock, event feed, momentum, player touches and team figures aligned instead of restarting browser-side totals.
 
 ### Production build of the frontend
 
@@ -262,7 +266,7 @@ The repository includes `render.yaml` for the API and `web/vercel.json` for the 
 
 OpenAI remains optional. To enable it, add `OPENAI_ENABLED=true`, `OPENAI_API_KEY`, and optionally `OPENAI_MODEL` to the Render service environment. Never add the API key to Vercel or to a `VITE_` variable.
 
-Render supplies `PORT` automatically; local API runs continue to default to port 4000. A free Render web service can spin down after inactivity, and every restart begins a new in-memory match.
+Render supplies `PORT` automatically; local API runs continue to default to port 4000. A free Render web service can spin down after inactivity. A service restart begins a new in-memory match, and a running service automatically starts another match after each full-time pause.
 
 ---
 
@@ -301,6 +305,7 @@ OPENAI_MODEL=gpt-4.1-mini
 | `OPENAI_QUEUE_SIZE` | `3` | Explanation requests allowed to wait |
 | `EVENT_INTERVAL_MS` | `1000` | Real milliseconds per generated event |
 | `HALF_TIME_BREAK_MS` | `15000` | Length of the half-time break |
+| `AUTO_RESTART_MS` | `15000` | Full-time pause before automatically starting the next demo match |
 
 **Keeping the key safe**
 
@@ -441,7 +446,7 @@ Each message is a JSON object in an SSE `data:` line.
 
 **Suggested demo flow**
 
-1. Start the backend with `EVENT_INTERVAL_MS=40 HALF_TIME_BREAK_MS=8000` for a match of about 4 minutes.
+1. Start the backend with `EVENT_INTERVAL_MS=40 HALF_TIME_BREAK_MS=8000 AUTO_RESTART_MS=10000` for a match of about 4 minutes that automatically loops.
 2. In Fan Mode, watch insights arrive with *Local template* badges; the selected ones switch to *OpenAI · gpt-4.1-mini* when their narratives arrive.
 3. Switch the language to Español, Français or Yorùbá.
 4. Compare the same insight in Analyst Mode (evidence, uncertainty) and Broadcast Mode (short on-air copy).

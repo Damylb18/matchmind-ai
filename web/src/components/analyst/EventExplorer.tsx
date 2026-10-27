@@ -297,7 +297,7 @@ function EventDetails({ event, insights }: { event: MatchEvent | undefined; insi
       <div className="details-evidence">
         <h3>Insight evidence</h3>
         {insights.length === 0 ? (
-          <p className="muted">Not referenced by any backend insight in this session.</p>
+          <p className="muted">Not referenced by any backend insight in this match.</p>
         ) : (
           <ul>
             {insights.map((insight) => (

@@ -18,3 +18,5 @@ services:
         value: "1000"
       - key: HALF_TIME_BREAK_MS
         value: "15000"
+      - key: AUTO_RESTART_MS
+        value: "15000"

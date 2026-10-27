@@ -117,7 +117,7 @@ export function AnalystDashboard({ state, status, tab, onTabChange, period }: An
           <div className="grid grid-a-teams">
             <TeamComparison
               teams={summary.teams}
-              info="Live-session figures for the selected period: counted in this browser from events received since it connected. They are not full-match official statistics."
+              info="Figures for the selected period, rebuilt from the current demo match history supplied by the backend. They are not official competition statistics."
             />
             <TeamTrends events={events} />
           </div>

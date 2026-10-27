@@ -8,6 +8,13 @@ const recentPressure = new Map<string, MatchEvent[]>();
 const activeSurges = new Set<string>();
 let insightCounter = 0;
 
+/** Clears match-scoped rule state before a new demo match begins. */
+export function resetInsightDetection(): void {
+  recentPressure.clear();
+  activeSurges.clear();
+  insightCounter = 0;
+}
+
 export function detectInsights(event: MatchEvent): Insight[] {
   if (
     event.event_type !== "pressure" ||

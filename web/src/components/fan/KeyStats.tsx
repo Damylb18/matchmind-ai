@@ -1,5 +1,5 @@
 import { AWAY, HOME } from "../../data/teams";
-import { formatClockSeconds, percent } from "../../lib/format";
+import { percent } from "../../lib/format";
 import { emptyCounts, type CountStats } from "../../lib/matchState";
 import type { MatchMetrics } from "../../types/match";
 import { Panel } from "../Panel";
@@ -12,7 +12,7 @@ type KeyStatsProps = {
 
 type Stat = { label: string; home: number | null; away: number | null; suffix?: string };
 
-export function KeyStats({ teams, metrics, sessionStart }: KeyStatsProps) {
+export function KeyStats({ teams, metrics }: KeyStatsProps) {
   const home = teams[HOME.apiName] ?? emptyCounts();
   const away = teams[AWAY.apiName] ?? emptyCounts();
 
@@ -28,15 +28,14 @@ export function KeyStats({ teams, metrics, sessionStart }: KeyStatsProps) {
     { label: "Tackles", home: home.tackles, away: away.tackles },
   ];
 
-  const since = sessionStart === null ? "" : ` since ${formatClockSeconds(sessionStart)}`;
 
   return (
     <Panel
       title="Key Stats"
       provenance="session"
       info={
-        "Team figures are counted in this browser from events received since it connected, " +
-        "so they cover only part of the match. Rings show the split between the two teams. " +
+        "Team figures are rebuilt from the current match history supplied by the backend. " +
+        "Rings show the split between the two teams. " +
         "Match totals below come from the backend and cover both teams for the whole feed."
       }
       className="key-stats-panel"
@@ -54,7 +53,7 @@ export function KeyStats({ teams, metrics, sessionStart }: KeyStatsProps) {
         <span>
           <i className="swatch away" /> {AWAY.code}
         </span>
-        <span className="muted">Live session{since}</span>
+        <span className="muted">Current match</span>
       </div>
 
       <AuthoritativeTotals metrics={metrics} />

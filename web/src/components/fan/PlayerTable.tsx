@@ -14,7 +14,7 @@ export function PlayerTable({ players }: { players: Record<string, PlayerStats> 
     <Panel
       title="Feed Players"
       provenance="session"
-      info="Per-ID totals from events received since this browser connected. IDs are synthetic and not mapped to real players."
+      info="Per-ID totals from the current demo match. IDs are synthetic and not mapped to real players."
       className="player-table-panel"
     >
       {rows.length === 0 ? (

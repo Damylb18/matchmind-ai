@@ -133,12 +133,12 @@ function SessionNote({ state }: { state: MatchState }) {
       </header>
       <ul>
         <li>
-          <strong>{state.received.toLocaleString()}</strong> events received in this session; the latest{" "}
+          <strong>{state.received.toLocaleString()}</strong> events in the current match history; the latest{" "}
           {state.events.length} are kept for the feed.
         </li>
         {state.missed > 0 && (
           <li>
-            <strong>{state.missed}</strong> events were missed while reconnecting and are absent from session
+            <strong>{state.missed}</strong> events were missed while reconnecting and are absent from the current
             figures.
           </li>
         )}

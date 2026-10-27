@@ -17,8 +17,8 @@ import { TEAMS } from "../data/teams";
  * dropped (or, for optional parts, ignored) rather than passed to the UI.
  */
 export type StreamPayload =
-  /** Sent when a connection opens: the current match state, no event. */
-  | { kind: "snapshot"; match: BackendMatchState }
+  /** Sent when a connection opens: current state plus match history for hydration. */
+  | { kind: "snapshot"; match: BackendMatchState; history: StreamMessage[] }
   /** Sent during half-time / after full-time, when no events are generated. */
   | { kind: "status"; match: BackendMatchState }
   | { kind: "message"; message: StreamMessage }
@@ -231,32 +231,8 @@ function parseRecap(value: unknown): MatchRecap | null {
   };
 }
 
-export function adaptStreamPayload(value: unknown): StreamPayload | null {
+function parseEventMessage(value: unknown): StreamMessage | null {
   if (!isRecord(value)) return null;
-
-  // Optional AI wording for an earlier insight. Older clients ignore this type.
-  if (value.type === "insight_narrative") {
-    const narrative = parseNarrative(value);
-    return narrative ? { kind: "narrative", narrative } : null;
-  }
-
-  if (value.type === "match_recap") {
-    const recap = parseRecap(value.recap);
-    return recap ? { kind: "recap", recap } : null;
-  }
-
-  // Sent when an SSE connection opens. Carries the current match state but no event.
-  if (value.type === "connected") {
-    const match = parseMatch(value.match);
-    return match ? { kind: "snapshot", match } : null;
-  }
-
-  // Match status update (half-time, second half resuming, full-time). No event.
-  if (value.type === "match_status") {
-    const match = parseMatch(value.match);
-    return match ? { kind: "status", match } : null;
-  }
-
   const event = value.event;
   const metrics = parseMetrics(value.metrics);
   if (!isRecord(event) || !metrics || !Array.isArray(value.insights)) return null;
@@ -283,19 +259,56 @@ export function adaptStreamPayload(value: unknown): StreamPayload | null {
         ? event.recipient_player_id
         : undefined;
 
-  // Keep the backend's own fields (the Event Explorer shows them verbatim) and add the
-  // normalised team/player/receiver names the UI uses.
   const adapted = { ...event, team, player } as MatchEvent;
   if (receiver !== undefined) adapted.receiver = receiver;
 
   return {
-    kind: "message",
-    message: {
-      // A malformed match block is ignored; the reducer keeps the last valid one.
-      match: parseMatch(value.match),
-      event: adapted,
-      metrics,
-      insights: value.insights.map(parseInsight).filter((insight): insight is Insight => insight !== null),
-    },
+    match: parseMatch(value.match),
+    event: adapted,
+    metrics,
+    insights: value.insights.map(parseInsight).filter((insight): insight is Insight => insight !== null),
   };
+}
+
+export function adaptStreamPayload(value: unknown): StreamPayload | null {
+  if (!isRecord(value)) return null;
+
+  // Optional AI wording for an earlier insight. Older clients ignore this type.
+  if (value.type === "insight_narrative") {
+    const narrative = parseNarrative(value);
+    return narrative ? { kind: "narrative", narrative } : null;
+  }
+
+  if (value.type === "match_recap") {
+    const recap = parseRecap(value.recap);
+    return recap ? { kind: "recap", recap } : null;
+  }
+
+  // Sent when an SSE connection opens. Hydrate from server history so a refresh does
+  // not reset match-wide counters while the authoritative clock keeps running.
+  if (value.type === "connected") {
+    const match = parseMatch(value.match);
+    if (!match) return null;
+    const metrics = parseMetrics(value.metrics);
+    const history =
+      metrics && Array.isArray(value.history)
+        ? value.history
+            .map((entry) =>
+              isRecord(entry)
+                ? parseEventMessage({ ...entry, metrics, match })
+                : null,
+            )
+            .filter((message): message is StreamMessage => message !== null)
+        : [];
+    return { kind: "snapshot", match, history };
+  }
+
+  // Match status update (half-time, second half resuming, full-time). No event.
+  if (value.type === "match_status") {
+    const match = parseMatch(value.match);
+    return match ? { kind: "status", match } : null;
+  }
+
+  const message = parseEventMessage(value);
+  return message ? { kind: "message", message } : null;
 }

@@ -25,7 +25,7 @@ export type PersonalisedInsight = Omit<StructuredExplanation, "source"> & {
 
 /**
  * Supplies the structured values the templates read when the backend did not send them,
- * using only the insight's own evidence events received in this session. A value is
+ * using only the insight's own evidence events from the current match. A value is
  * filled only when every cited evidence event is available, so it equals what the
  * backend rule computed. The original insight is never modified.
  */

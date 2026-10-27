@@ -57,7 +57,7 @@ export type MatchState = {
   /** Authoritative backend totals (match-wide, both teams). */
   metrics: MatchMetrics | null;
   match: StreamMessage["match"] | null;
-  /** Session aggregates: every event received since this browser connected. */
+  /** Aggregates for the current demo match, hydrated from the backend on connect. */
   teams: Record<string, CountStats>;
   players: Record<string, PlayerStats>;
   momentum: MomentumBins;
@@ -114,7 +114,7 @@ export const initialMatchState: MatchState = {
 export type MatchAction =
   | { type: "message"; message: StreamMessage }
   /** The match state sent when a connection opens. */
-  | { type: "snapshot"; match: BackendMatchState }
+  | { type: "snapshot"; match: BackendMatchState; history?: StreamMessage[] }
   /** A status-only update during half-time or after full-time. */
   | { type: "status"; match: BackendMatchState }
   /** AI wording for an insight; replaces any earlier narrative for the same insight. */
@@ -163,10 +163,34 @@ export function addEvent<T extends CountStats>(stats: T, event: MatchEvent): T {
   return next;
 }
 
-function applySnapshot(state: MatchState, match: BackendMatchState): MatchState {
+function applySnapshot(state: MatchState, match: BackendMatchState, history: StreamMessage[] = []): MatchState {
   const connections = state.connections + 1;
-  // The clock went backwards: the backend restarted with a new match, so start a fresh session.
-  if (state.clock !== null && match.clock_seconds + 2 < state.clock) {
+  const sameMatch = state.match?.match_id === match.match_id;
+  const restarted =
+    (state.match !== null && !sameMatch) ||
+    (state.clock !== null && match.clock_seconds + 2 < state.clock);
+  const recovery: Recovery | null = restarted
+    ? { kind: "restart", atClock: match.clock_seconds, gapSeconds: 0 }
+    : state.connections > 0 && state.clock !== null
+      ? { kind: "reconnect", atClock: match.clock_seconds, gapSeconds: Math.max(0, match.clock_seconds - state.clock) }
+      : state.recovery;
+
+  // A connection snapshot is authoritative. Rebuild from its history so refreshes and
+  // reconnects cannot leave browser-local totals behind the server clock.
+  if (history.length > 0) {
+    let hydrated: MatchState = {
+      ...initialMatchState,
+      match,
+      connections,
+      recovery,
+      narratives: sameMatch ? state.narratives : {},
+      recaps: sameMatch ? state.recaps : {},
+    };
+    for (const message of history) hydrated = matchReducer(hydrated, { type: "message", message });
+    return { ...hydrated, match, connections, recovery };
+  }
+
+  if (restarted) {
     return {
       ...initialMatchState,
       match,
@@ -174,16 +198,11 @@ function applySnapshot(state: MatchState, match: BackendMatchState): MatchState 
       recovery: { kind: "restart", atClock: match.clock_seconds, gapSeconds: 0 },
     };
   }
-  // A later connection after we already had data is a recovery from an interruption.
-  const recovery: Recovery | null =
-    state.connections > 0 && state.clock !== null
-      ? { kind: "reconnect", atClock: match.clock_seconds, gapSeconds: Math.max(0, match.clock_seconds - state.clock) }
-      : state.recovery;
   return { ...state, match, connections, recovery };
 }
 
 export function matchReducer(state: MatchState, action: MatchAction): MatchState {
-  if (action.type === "snapshot") return applySnapshot(state, action.match);
+  if (action.type === "snapshot") return applySnapshot(state, action.match, action.history);
   // Status only: score and clock are unchanged by the backend while play is stopped.
   if (action.type === "status") return { ...state, match: action.match };
   if (action.type === "narrative") {

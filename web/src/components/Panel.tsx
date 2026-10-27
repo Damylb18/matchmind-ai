@@ -5,7 +5,7 @@ export type Provenance = "authoritative" | "session" | "illustrative" | "demo";
 
 const PROVENANCE_LABEL: Record<Provenance, string> = {
   authoritative: "API total",
-  session: "Live session",
+  session: "Current match",
   illustrative: "Illustrative",
   demo: "Demo profiles",
 };

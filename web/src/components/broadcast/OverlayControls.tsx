@@ -267,7 +267,7 @@ function InsightsTab({
           Hide banner
         </button>
         <span className="bc-note">
-          {insights.length} backend insight{insights.length === 1 ? "" : "s"} this session
+          {insights.length} backend insight{insights.length === 1 ? "" : "s"} this match
         </span>
       </div>
       {target && targetText && (

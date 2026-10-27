@@ -120,6 +120,15 @@ try {
   const legacy = adaptStreamPayload(eventMessages[4]);
   check("event payload still parsed", legacy?.kind === "message" && legacy.message.insights[0].id === "insight_1");
 
+  const snapshot = adaptStreamPayload({
+    type: "connected",
+    match: match({ clock_seconds: 4 }),
+    metrics: eventMessages.at(-1).metrics,
+    history: eventMessages.map(({ event, insights }) => ({ event, insights })),
+  });
+  check("history snapshot parsed", snapshot?.kind === "snapshot" && snapshot.history.length === 5);
+  check("snapshot events normalised", snapshot?.kind === "snapshot" && snapshot.history[0].event.team === "man_utd");
+
   // --- Reducer ---------------------------------------------------------------
   let state = matchReducer(initialMatchState, { type: "snapshot", match: match() });
   for (const raw of eventMessages) state = matchReducer(state, { type: "message", message: adaptStreamPayload(raw).message });
@@ -144,6 +153,26 @@ try {
   check("late pending copy ignored", state.recaps.half_time?.ai_status === "ready");
   const restarted = matchReducer(state, { type: "snapshot", match: match({ clock_seconds: 0 }) });
   check("backend restart clears narratives and recaps", Object.keys(restarted.narratives).length === 0 && !restarted.recaps.half_time);
+
+  let hydrated = matchReducer(initialMatchState, {
+    type: "snapshot",
+    match: snapshot.match,
+    history: snapshot.history,
+  });
+  check("snapshot hydrates current match", hydrated.received === 5 && hydrated.history.length === 5 && hydrated.clock === 4);
+  check("hydrated aggregates match history", hydrated.teams.man_utd.pressures === 5 && hydrated.insights.length === 1);
+  hydrated = matchReducer(hydrated, {
+    type: "snapshot",
+    match: snapshot.match,
+    history: snapshot.history,
+  });
+  check("refresh hydration is idempotent", hydrated.received === 5 && hydrated.history.length === 5 && hydrated.connections === 2);
+  const nextMatch = matchReducer(hydrated, {
+    type: "snapshot",
+    match: match({ match_id: "match_002", clock_seconds: 0 }),
+    history: [],
+  });
+  check("new match id clears hydrated history", nextMatch.received === 0 && nextMatch.history.length === 0 && nextMatch.recovery?.kind === "restart");
 
   // --- Personalisation -------------------------------------------------------
   const eventsById = new Map(state.history.map((event) => [event.event_id, event]));
