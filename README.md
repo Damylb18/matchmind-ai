@@ -250,6 +250,20 @@ npm run build
 npm run preview
 ```
 
+### Deploy with Render and Vercel
+
+The repository includes `render.yaml` for the API and `web/vercel.json` for the frontend.
+
+1. In Render, create a Blueprint from this repository. It will use `api/` as the service root, run `npm ci && npm run build`, start with `npm start`, and health-check `/api/health`.
+2. Wait for the API to deploy, then copy its public `https://...onrender.com` URL.
+3. In Vercel, import the same repository and set the project Root Directory to `web`.
+4. Add `VITE_MATCH_STREAM_URL=https://YOUR-API.onrender.com/api/match/stream` to the Vercel Production environment before deploying.
+5. After both services are live, open the Vercel URL and confirm the sidebar data feed changes to **Live**.
+
+OpenAI remains optional. To enable it, add `OPENAI_ENABLED=true`, `OPENAI_API_KEY`, and optionally `OPENAI_MODEL` to the Render service environment. Never add the API key to Vercel or to a `VITE_` variable.
+
+Render supplies `PORT` automatically; local API runs continue to default to port 4000. A free Render web service can spin down after inactivity, and every restart begins a new in-memory match.
+
 ---
 
 ## Configuration

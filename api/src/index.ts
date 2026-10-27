@@ -379,6 +379,8 @@ setInterval(() => {
   }
 }, STATUS_HEARTBEAT_MS);
 
-app.listen(4000, () => {
-  console.log("MatchMind API running at http://localhost:4000");
+const PORT = Number(process.env.PORT) || 4000;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`MatchMind API running on port ${PORT}`);
 });

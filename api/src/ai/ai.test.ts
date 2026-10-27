@@ -2,7 +2,7 @@
 // Run from api/: npm test
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import type { Insight, MatchEvent, MatchState } from "../types.js";
+import type { Insight, MatchEvent, MatchMetrics, MatchState } from "../types.js";
 import { createOpenAiCaller, redactSecrets, type AiCaller, type AiRequest } from "./client.js";
 import { loadAiConfig, type AiConfig } from "./config.js";
 import { checkGrounding, collectNumbers, hasYorubaNumberWord } from "./grounding.js";
@@ -57,7 +57,12 @@ const insightFor = (events: MatchEvent[], id = "insight_1"): Insight => ({
   evidence_event_ids: events.map((event) => event.event_id),
 });
 
-const METRICS = { attempted_passes: 0, completed_passes: 0, pass_accuracy: 0 };
+const METRICS: MatchMetrics = {
+  attempted_passes: 0,
+  completed_passes: 0,
+  incomplete_passes: 0,
+  pass_accuracy: 0,
+};
 
 /** Builds a model answer with every language/audience filled by `make`. */
 function variants(fields: [string, string], make: (lang: string, audience: string) => [string, string]) {
